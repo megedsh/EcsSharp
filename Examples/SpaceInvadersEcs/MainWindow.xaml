@@ -1,0 +1,13 @@
+﻿<Window x:Class="SpaceInvadersEcs.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Space Invaders Ecs" Height="500" Width="800">
+    <Canvas Name="myCanvas" Focusable="True" Background="Black" KeyDown="keyDown" KeyUp="keyUp">
+
+        <Label Name="msgCtrl" Foreground="White" FontSize="16" FontWeight="ExtraBold">Enemies Left: 0</Label>
+
+    </Canvas>
+</Window>

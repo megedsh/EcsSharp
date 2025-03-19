@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+	<Nullable>enable</Nullable>
+	<LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.15" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
+    <PackageReference Include="NUnit" Version="3.13.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.0.0" />
+    <PackageReference Include="coverlet.collector" Version="3.1.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EcsSharp.Extensions.Json\EcsSharp.Extensions.Json.csproj" />
+    <ProjectReference Include="..\EcsSharp.Extensions.Newtonsoft\EcsSharp.Extensions.Newtonsoft.csproj" />
+    <ProjectReference Include="..\EcsSharp\EcsSharp.csproj" />
+  </ItemGroup>
+
+  
+
+</Project>
