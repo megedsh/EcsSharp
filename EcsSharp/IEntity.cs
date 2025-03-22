@@ -60,6 +60,7 @@ public interface IEntity
     bool    HasTag(params string[] tag);
 
     Component[] CachedComponents { get; }
+    bool Exists();
 }
 
 internal interface IEntityInternal

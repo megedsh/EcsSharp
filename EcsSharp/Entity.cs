@@ -129,6 +129,10 @@ public class Entity : IEntity, IEntityInternal
     }
     
     public Component[] CachedComponents => m_cachedComponents.Values.ToArray();
+    public bool Exists()
+    {
+        return m_ecsStorage.QuerySingle(Id) !=null;
+    }
 
     private HashSet<string> getReadOnlyTags()
     {
