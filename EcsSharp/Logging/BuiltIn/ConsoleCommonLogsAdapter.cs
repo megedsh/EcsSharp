@@ -63,10 +63,10 @@ public class ConsoleCommonLogger : BaseCommonLogger
     {
         StringBuilder sb = new();
 
-        sb.Append(DateTime.UtcNow).Append(' ')
+        sb.Append(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")).Append(' ')
             .Append($"[{logLevel}]").Append(' ')
-            .Append($"{m_loggerName}").Append('\t')
             .Append($"[{getThreadName()}]").Append('\t')
+            .Append($"{m_loggerName}").Append(" - ")            
             .Append(buildMessage(message, exception));
         lock (m_sync)
         {
