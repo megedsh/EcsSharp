@@ -45,5 +45,8 @@
         }
 
         public override int GetHashCode() => Data.GetHashCode();
+
+        public override string ToString() => Data.ToString();
+        
     }
 }

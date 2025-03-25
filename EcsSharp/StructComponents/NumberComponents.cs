@@ -15,7 +15,7 @@
             new UInt16Component
             {
                 Data = d
-            };
+            };  
     }
 
     public class Int32Component : StructComponent<int>
@@ -25,6 +25,21 @@
             {
                 Data = d
             };
+    }
+
+    public class Int32Component<T> : Int32Component
+        where T : Int32Component<T>, new()
+
+    {
+        public static implicit operator Int32Component<T>(int d) =>
+            new T
+            {
+                Data = d
+            };
+
+        public static implicit operator int(Int32Component<T> d) => d.Data;
+        public static implicit operator T(Int32Component<T> d) => (T)d.Data;
+        public static implicit operator Int32Component<T>(T d) => d;
     }
 
     public class UInt32Component : StructComponent<uint>
@@ -53,7 +68,20 @@
                 Data = d
             };
     }
+    public class DoubleComponent<T>: DoubleComponent
+        where T: DoubleComponent<T>, new()
 
+    {
+        public static implicit operator DoubleComponent<T>(double d) =>
+            new T
+            {
+                Data = d
+            };
+
+        public static implicit operator double(DoubleComponent<T> d) => d.Data;
+        public static implicit operator T(DoubleComponent<T> d) => (T)d.Data;
+        public static implicit operator DoubleComponent<T>(T d) => d;
+    }
     public class DoubleComponent : StructComponent<double>
     {
         public static implicit operator DoubleComponent(double d) =>

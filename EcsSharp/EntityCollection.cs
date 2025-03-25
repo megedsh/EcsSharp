@@ -23,5 +23,10 @@ namespace EcsSharp
             get => m_entities[index];
             set => m_entities[index] = value;
         }
+
+        public override string ToString()
+        {
+            return $"{nameof(Count)}: {Count}";
+        }
     }
 }
