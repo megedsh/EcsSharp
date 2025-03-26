@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+
 using EcsSharp.Storage;
 
 namespace EcsSharp;
@@ -12,8 +13,8 @@ public class Entity : IEntity, IEntityInternal
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly ConcurrentDictionary<Type, Component> m_cachedComponents = new();
 
-    private readonly IEcsStorage m_ecsStorage;
-    private readonly object m_sync = new();
+    private readonly IEcsStorage     m_ecsStorage;
+    private readonly object          m_sync = new();
     private readonly HashSet<string> m_tags;
 
     private HashSet<string> m_readOnlyTags;
@@ -29,16 +30,16 @@ public class Entity : IEntity, IEntityInternal
 
     public string[] Tags => getTagArray();
 
-    public Component GetComponent(Type componentType)
-    {
-        return getAndCacheComponent(componentType);
-    }
+    public Component GetComponent(Type componentType) => getAndCacheComponent(componentType);
 
     public T GetComponent<T>()
     {
         Component component = getAndCacheComponent(typeof(T));
 
-        if (component.Data != null) return (T)component.Data;
+        if (component.Data != null)
+        {
+            return (T)component.Data;
+        }
 
         return default;
     }
@@ -46,48 +47,33 @@ public class Entity : IEntity, IEntityInternal
     public T[] GetComponents<T>()
     {
         return getAndCacheComponents(typeof(T))
-            .Select(c => c.Data)
-            .Cast<T>().ToArray();
+               .Select(c => c.Data)
+               .Cast<T>().ToArray();
     }
 
-    public Component[] GetComponents(Type componentType)
-    {
-        return getAndCacheComponents(componentType);
-    }
+    public Component[] GetComponents(Type componentType) => getAndCacheComponents(componentType);
 
-    public Component[] GetAllComponents()
-    {
-        return m_ecsStorage.GetAllComponents(this);
-    }
+    public Component[] GetAllComponents() => m_ecsStorage.GetAllComponents(this);
 
-    public Component RefreshComponent(Type componentType)
-    {
-        return getAndRefreshCache(componentType);
-    }
+    public Component RefreshComponent(Type componentType) => getAndRefreshCache(componentType);
 
     public T RefreshComponent<T>()
     {
         Component component = getAndRefreshCache(typeof(T));
 
-        if (component.Data != null) return (T)component.Data;
+        if (component.Data != null)
+        {
+            return (T)component.Data;
+        }
 
         return default;
     }
 
-    public T[] RefreshComponents<T>()
-    {
-        return GetComponents<T>();
-    }
+    public T[] RefreshComponents<T>() => GetComponents<T>();
 
-    public Component[] RefreshComponents(Type componentType)
-    {
-        return GetComponents(componentType);
-    }
+    public Component[] RefreshComponents(Type componentType) => GetComponents(componentType);
 
-    public Component[] RefreshAllComponents()
-    {
-        return getAndCacheAllComponents();
-    }
+    public Component[] RefreshAllComponents() => getAndCacheAllComponents();
 
     public IEntity SetComponent<T>(T component)
     {
@@ -109,45 +95,24 @@ public class Entity : IEntity, IEntityInternal
         return this;
     }
 
-    public bool ConditionalSet<T>(T component, ComponentSetCondition<T> condition, bool setWhenNotExist = true)
-    {
-        return m_ecsStorage.ConditionalSet(this, component, condition, setWhenNotExist);
-    }
+    public bool ConditionalSet<T>(T component, ComponentSetCondition<T> condition, bool setWhenNotExist = true) => m_ecsStorage.ConditionalSet(this, component, condition, setWhenNotExist);
 
-    public bool ConditionalSet<T>(Predicate<T> condition, Func<T, T> componentFactory, bool setWhenNotExist = true)
-    {
-        return m_ecsStorage.ConditionalSet(this, condition, componentFactory, setWhenNotExist);
-    }
+    public bool ConditionalSet<T>(Predicate<T> condition, Func<T, T> componentFactory, bool setWhenNotExist = true) => m_ecsStorage.ConditionalSet(this, condition, componentFactory, setWhenNotExist);
 
-    public bool SetWhenNotEqual<T>(T component)
-    {
-        return m_ecsStorage.SetWhenNotEqual(this, component);
-    }
+    public bool SetWhenNotEqual<T>(T component) => m_ecsStorage.SetWhenNotEqual(this, component);
 
-    public bool SetWhenNotEqual<T>(Func<T, T> componentFactory, bool setWhenNotExist = true)
-    {
-        return m_ecsStorage.SetWhenNotEqual(this, componentFactory, setWhenNotExist);
-    }
+    public bool SetWhenNotEqual<T>(Func<T, T> componentFactory, bool setWhenNotExist = true) => m_ecsStorage.SetWhenNotEqual(this, componentFactory, setWhenNotExist);
 
-    public IEntity UpdateComponent<T>(Func<T, T> componentFactory, bool setWhenNotExist = true)
-    {
-        return m_ecsStorage.UpdateComponent(this, componentFactory, setWhenNotExist);
-    }
+    public IEntity UpdateComponent<T>(Func<T, T> componentFactory, bool setWhenNotExist = true) => m_ecsStorage.UpdateComponent(this, componentFactory, setWhenNotExist);
 
-    public bool HasComponent<T>()
-    {
-        return HasComponent(typeof(T));
-    }
+    public bool HasComponent<T>() => HasComponent(typeof(T));
 
-    public bool HasComponent(Type type)
-    {
-        return GetComponent(type).Data != null;
-    }
+    public bool HasComponent(Type type) => GetComponent(type).Data != null;
 
     public IEntity AddTag(params string[] tag)
     {
         m_ecsStorage.AddTag(this, tag);
-        lock (m_sync)
+        lock(m_sync)
         {
             m_readOnlyTags = null;
             foreach (string s in tag)
@@ -166,7 +131,10 @@ public class Entity : IEntity, IEntityInternal
         foreach (string s in tag)
         {
             res = readOnlyTags.Contains(s);
-            if (!res) break;
+            if (!res)
+            {
+                break;
+            }
         }
 
         return res;
@@ -174,32 +142,25 @@ public class Entity : IEntity, IEntityInternal
 
     public Component[] CachedComponents => m_cachedComponents.Values.ToArray();
 
-    public bool Exists()
-    {
-        return m_ecsStorage.QuerySingle(Id) != null;
-    }
+    public bool Exists() => m_ecsStorage.QuerySingle(Id) != null;
 
     private HashSet<string> getReadOnlyTags()
     {
         HashSet<string> tmp = m_readOnlyTags;
         if (tmp == null)
-            lock (m_sync)
+        {
+            lock(m_sync)
             {
                 tmp = m_readOnlyTags ??= new HashSet<string>(m_tags);
             }
+        }
 
         return tmp;
     }
 
-    private string[] getTagArray()
-    {
-        return getReadOnlyTags().ToArray();
-    }
+    private string[] getTagArray() => getReadOnlyTags().ToArray();
 
-    public override string ToString()
-    {
-        return $"{nameof(Id)}: {Id}";
-    }
+    public override string ToString() => $"{nameof(Id)}: {Id}";
 
     public void SetComponents(params Component[] components)
     {
@@ -214,7 +175,10 @@ public class Entity : IEntity, IEntityInternal
         if (!m_cachedComponents.TryGetValue(componentType, out Component component))
         {
             component = m_ecsStorage.GetComponent(this, componentType);
-            if (component.Data != null) m_cachedComponents[componentType] = component;
+            if (component.Data != null)
+            {
+                m_cachedComponents[componentType] = component;
+            }
         }
 
         return component;
@@ -224,10 +188,13 @@ public class Entity : IEntity, IEntityInternal
     {
         Component component = m_ecsStorage.GetComponent(this, componentType);
         if (component.Data != null)
+        {
             m_cachedComponents[componentType] = component;
+        }
         else
+        {
             m_cachedComponents.TryRemove(componentType, out _);
-
+        }
 
         return component;
     }
@@ -247,7 +214,10 @@ public class Entity : IEntity, IEntityInternal
     private Component[] getAndCacheAllComponents()
     {
         Component[] components = m_ecsStorage.GetAllComponents(this);
-        if (components.Length == 0) m_cachedComponents.Clear();
+        if (components.Length == 0)
+        {
+            m_cachedComponents.Clear();
+        }
 
         foreach (Component t in components)
         {
@@ -293,38 +263,43 @@ public class Entity : IEntity, IEntityInternal
         if (typesToCheck.Count > 0)
         {
             Dictionary<Type, ulong> dictionary = m_ecsStorage.GetComponentsVersion(this, typesToCheck)
-                .ToDictionary(p => p.Type, p => p.Version);
+                                                             .ToDictionary(p => p.Type, p => p.Version);
 
             foreach (Component cachedComponent in cachedComponents)
             {
                 Type type = cachedComponent.GetType();
                 if (dictionary.TryGetValue(type, out ulong currentVersion))
+                {
                     if (currentVersion > cachedComponent.Version)
                     {
                         //TODO: Log component conflict issue
                     }
+                }
             }
         }
     }
 
-    protected bool Equals(IEntity other)
-    {
-        return Id == other.Id;
-    }
+    protected bool Equals(IEntity other) => Id == other.Id;
 
     public override bool Equals(object obj)
     {
-        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(null, obj))
+        {
+            return false;
+        }
 
-        if (ReferenceEquals(this, obj)) return true;
+        if (ReferenceEquals(this, obj))
+        {
+            return true;
+        }
 
-        if (obj.GetType() != GetType()) return false;
+        if (obj.GetType() != GetType())
+        {
+            return false;
+        }
 
         return Equals((Entity)obj);
     }
 
-    public override int GetHashCode()
-    {
-        return Id != null ? Id.GetHashCode() : 0;
-    }
+    public override int GetHashCode() => Id != null ? Id.GetHashCode() : 0;
 }
