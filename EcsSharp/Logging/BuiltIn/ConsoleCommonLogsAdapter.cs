@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -9,10 +8,7 @@ namespace EcsSharp.Logging.BuiltIn;
 
 public class ConsoleCommonLogsAdapter : ICommonLogProvider
 {
-    public ConsoleCommonLogsAdapter(CommonLogLevel rootLoggerLevel = CommonLogLevel.Debug)
-    {
-        RootLoggerLevel = rootLoggerLevel;
-    }
+    public ConsoleCommonLogsAdapter(CommonLogLevel rootLoggerLevel = CommonLogLevel.Debug) => RootLoggerLevel = rootLoggerLevel;
 
     private readonly Dictionary<string, ICommonLog> m_activeLoggers = new();
 
@@ -20,7 +16,10 @@ public class ConsoleCommonLogsAdapter : ICommonLogProvider
 
     public ICommonLog GetLogger(Type type)
     {
-        if (type == null) throw new ArgumentNullException(nameof(type));
+        if (type == null)
+        {
+            throw new ArgumentNullException(nameof(type));
+        }
 
         ICommonLog logger = null;
         if (!m_activeLoggers.TryGetValue(type.FullName, out logger))
@@ -34,7 +33,10 @@ public class ConsoleCommonLogsAdapter : ICommonLogProvider
 
     public ICommonLog GetLogger(string name)
     {
-        if (name == null) throw new ArgumentNullException(nameof(name));
+        if (name == null)
+        {
+            throw new ArgumentNullException(nameof(name));
+        }
 
         ICommonLog logger = null;
         if (!m_activeLoggers.TryGetValue(name, out logger))
@@ -46,15 +48,11 @@ public class ConsoleCommonLogsAdapter : ICommonLogProvider
         return logger;
     }
 }
-
 public class ConsoleCommonLogger : BaseCommonLogger
 {
     private readonly object m_sync = new();
 
-    public ConsoleCommonLogger(string loggerName, CommonLogLevel logLevel) : base(loggerName)
-    {
-        LogLevel = logLevel;
-    }
+    public ConsoleCommonLogger(string loggerName, CommonLogLevel logLevel) : base(loggerName) => LogLevel = logLevel;
 
     public override CommonLogLevel LogLevel { get; }
     public override CommonLogEventDelegate LogEventDelegate => logEvent;
@@ -64,11 +62,11 @@ public class ConsoleCommonLogger : BaseCommonLogger
         StringBuilder sb = new();
 
         sb.Append(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")).Append(' ')
-            .Append($"[{logLevel}]").Append(' ')
-            .Append($"[{getThreadName()}]").Append('\t')
-            .Append($"{m_loggerName}").Append(" - ")            
-            .Append(buildMessage(message, exception));
-        lock (m_sync)
+          .Append($"[{logLevel}]").Append(' ')
+          .Append($"[{getThreadName()}]").Append('\t')
+          .Append($"{m_loggerName}").Append(" - ")
+          .Append(buildMessage(message, exception));
+        lock(m_sync)
         {
             Console.ForegroundColor = getColor(logLevel);
             Console.WriteLine(sb.ToString());
@@ -89,7 +87,6 @@ public class ConsoleCommonLogger : BaseCommonLogger
         }
 
         return Thread.CurrentThread.ManagedThreadId.ToString(CultureInfo.InvariantCulture);
-        
     }
 
     private ConsoleColor getColor(CommonLogLevel loglevle)
@@ -117,11 +114,21 @@ public class ConsoleCommonLogger : BaseCommonLogger
     private string buildMessage(object message, Exception exception)
     {
         string exceptionStackTrace = null;
-        if (exception != null) exceptionStackTrace = exception.StackTrace;
+        string exceptionType = null;
+        string exceptionMessage = null;
+        if (exception != null)
+        {
+            exceptionType = exception.GetType().Name;
+            exceptionMessage = exception.Message;
+            exceptionStackTrace = exception.StackTrace;
+        }
 
         string result = message.ToString();
 
-        if (!string.IsNullOrEmpty(exceptionStackTrace)) result = result + " - " + exceptionStackTrace;
+        if (!string.IsNullOrEmpty(exceptionStackTrace))
+        {
+            result = result + $" - {exceptionType} : {exceptionMessage} - {exceptionStackTrace}";
+        }
 
         return result;
     }
