@@ -5,6 +5,7 @@
 		<LangVersion>default</LangVersion>
 		<UseWPF>true</UseWPF>
 		<OutputType>Exe</OutputType>
+		<EnableWindowsTargeting>True</EnableWindowsTargeting>
 	</PropertyGroup>
 
 	<ItemGroup>
