@@ -132,6 +132,8 @@ public class EcsRepo : IEcsRepo
         return m_ecsStorage.QueryAll();
     }
 
+    public T BatchQuery<T>(Func<IEcsRepo,T> queryFunc) => m_ecsStorage.BatchQuery<T>(this, queryFunc);
+
     public IEntityCollection QueryByTags(params string[] tags)
     {
         return m_ecsStorage.QueryByTags(tags);

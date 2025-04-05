@@ -30,28 +30,29 @@ namespace EcsSharp.Storage
         Component         GetComponent(IEntity entity, Type componentType);
         Component[]       GetComponents(IEntity entity, Type componentType);
 
-        Component[]       GetAllComponents(IEntity entity);
-        ulong              GetComponentVersion(Entity entity, Type componentType);
-        TypeVersionPair[] GetComponentsVersion(IEntity entity, IEnumerable<Type> types);
-        Type[]            GetComponentTypes(IEntity entity);
-        void              DeleteEntity(IEntity entity);
-        void              DeleteEntity(string id);
-        void DeleteEntitiesWithTag(params string[] tags);
-        void              MergePackage(EcsPackage ecsPackage);
-        void BatchUpdate(IEcsRepo repo, Action<IEcsRepo> batch);
-        IEntityCollection Query(params string[] ids);
-        IEntityCollection Query<T>(string[] tags = null);
-        IEntityCollection Query<T>(Predicate<T> componentPredicate,string[] tags = null);
-        IEntityCollection Query<T>(Func<T, IEntity, bool> entityPredicate,string[] tags = null);
-        IEntityCollection Query(Type componentType, Func<object, IEntity, bool> entityPredicate = null,string[] tags = null);
-        IEntityCollection Query(Type[] componentTypes, Predicate<IEntity> entityPredicate = null,string[] tags = null);
-        IEntityCollection Query(params IEntity[] entities);
-        IEntity           QuerySingle<T>(string[] tags = null);
-        IEntity           QuerySingle<T>(Predicate<T> componentPredicate,string[] tags = null);
-        IEntity           QuerySingle(string id);
-        IEntity           QuerySingle<T>(Func<T, IEntity, bool> entityPredicate,string[] tags = null);
-        IEntity           QuerySingle(Type componentType, Func<object, IEntity, bool> entityPredicate = null,string[] tags = null);
-        IEntity           QuerySingle(Type[] componentTypes, Predicate<IEntity> entityPredicate = null,string[] tags = null);
+        Component[]       GetAllComponents(IEntity              entity);
+        ulong             GetComponentVersion(Entity            entity, Type              componentType);
+        TypeVersionPair[] GetComponentsVersion(IEntity          entity, IEnumerable<Type> types);
+        Type[]            GetComponentTypes(IEntity             entity);
+        void              DeleteEntity(IEntity                  entity);
+        void              DeleteEntity(string                   id);
+        void              DeleteEntitiesWithTag(params string[] tags);
+        void              MergePackage(EcsPackage               ecsPackage);
+        void              BatchUpdate(IEcsRepo                  repo, Action<IEcsRepo>  batch);
+        T                 BatchQuery<T>(EcsRepo                 repo, Func<IEcsRepo, T> queryFunc);
+        IEntityCollection Query(params string[]                 ids);
+        IEntityCollection Query<T>(string[]                     tags                                                            = null);
+        IEntityCollection Query<T>(Predicate<T>                 componentPredicate, string[]                    tags            = null);
+        IEntityCollection Query<T>(Func<T, IEntity, bool>       entityPredicate,    string[]                    tags            = null);
+        IEntityCollection Query(Type                            componentType,      Func<object, IEntity, bool> entityPredicate = null, string[] tags = null);
+        IEntityCollection Query(Type[]                          componentTypes,     Predicate<IEntity>          entityPredicate = null, string[] tags = null);
+        IEntityCollection Query(params IEntity[]                entities);
+        IEntity           QuerySingle<T>(string[]               tags                             = null);
+        IEntity           QuerySingle<T>(Predicate<T>           componentPredicate,string[] tags = null);
+        IEntity           QuerySingle(string                    id);
+        IEntity           QuerySingle<T>(Func<T, IEntity, bool> entityPredicate, string[]                    tags            = null);
+        IEntity           QuerySingle(Type                      componentType,   Func<object, IEntity, bool> entityPredicate = null, string[] tags = null);
+        IEntity           QuerySingle(Type[]                    componentTypes,  Predicate<IEntity>          entityPredicate = null, string[] tags = null);
         IEntityCollection QueryAll();
 
         IEntityCollection QueryByTags(string[] tags);
@@ -64,6 +65,6 @@ namespace EcsSharp.Storage
                                                            Func<IEntity, TKey> keyFactory,
                                                            IEcsRepo ecsRepo);
 
-        IEntity QuerySingleByTags(params string[] tags);
+        IEntity QuerySingleByTags(params string[] tags);        
     }
 }
