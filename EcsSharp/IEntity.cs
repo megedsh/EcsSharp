@@ -58,6 +58,7 @@ public interface IEntity
 
     IEntity AddTag(params string[] tag);
     bool    HasTag(params string[] tag);
+    bool    HasAnyTag(params string[] tag);
 
     Component[] CachedComponents { get; }
     bool Exists();

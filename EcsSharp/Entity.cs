@@ -140,6 +140,21 @@ public class Entity : IEntity, IEntityInternal
         return res;
     }
 
+    public bool HasAnyTag(params string[] tag)
+    {
+        bool res = false;
+        HashSet<string> readOnlyTags = getReadOnlyTags();
+        foreach (string s in tag)
+        {
+            res = readOnlyTags.Contains(s);
+            if (res)
+            {
+                break;
+            }
+        }
+        return res;
+    }
+
     public Component[] CachedComponents => m_cachedComponents.Values.ToArray();
 
     public bool Exists() => m_ecsStorage.QuerySingle(Id) != null;
