@@ -1139,9 +1139,16 @@ public class EcsStorage : IEcsStorage
     private IEntity createEntityWithAllComponents(string entityId)
     {
         m_tagsForEntity.TryGetValue(entityId, out HashSet<string> tags);
-        Entity entity = new(this, entityId, tags);
-        entity.RefreshAllComponents();
+        IEntity entity = new Entity(this, entityId, tags);
+        entity = setComponentCache(entity);
         return entity;
+    }
+
+    private IEntity setComponentCache(IEntity entity)
+    {
+        Component[] allComponents = getAllComponents(entity.Id);
+        ((IEntityInternal) entity).SetComponentsInEntityCache(allComponents);
+        return entity; 
     }
 
     private IEnumerable<IEntity> query(Type[] componentType, Predicate<IEntity> entityPredicate = null, string[] tags = null)
@@ -1165,7 +1172,8 @@ public class EcsStorage : IEcsStorage
                .Distinct()
                .Select(id => getByEntityPredicate(id, entityPredicate))
                .Where(e => e != null)
-               .Select(e => addComponentsToEntity(e, componentType));
+               .Select(setComponentCache);
+        
     }
 
     private IEntity addComponentsToEntity(IEntity entity, Type[] componentTypes)
@@ -1202,7 +1210,8 @@ public class EcsStorage : IEcsStorage
         return stream
                .Select(id => getByComponentAndEntityPredicate(id, type, entityPredicate))
                .Where(e => e != null)
-               .ToArray();
+               .Select(setComponentCache)
+                           .ToArray();
     }
 
     private ICollection<IEntity> query<T>(Func<T, IEntity, bool> entityPredicate, string[] tags = null)
@@ -1226,6 +1235,7 @@ public class EcsStorage : IEcsStorage
         return stream
                .Select(id => getByComponentAndEntityPredicate(id, entityPredicate))
                .Where(e => e != null)
+               .Select(setComponentCache)
                .ToArray();
     }
 
@@ -1251,6 +1261,7 @@ public class EcsStorage : IEcsStorage
         return stream
                .Select(id => getByComponentPredicate(id, type, componentPredicate))
                .Where(e => e != null)
+               .Select(setComponentCache)
                .ToArray();
     }
 
@@ -1266,7 +1277,7 @@ public class EcsStorage : IEcsStorage
             }
 
             IEntity entity = createEntity(id);
-            ((IEntityInternal)entity).SetComponents(components);
+            ((IEntityInternal)entity).SetComponentsInEntityCache(components);
             return entity;
         }
 
@@ -1297,7 +1308,7 @@ public class EcsStorage : IEcsStorage
             }
 
             IEntity entity = createEntity(id);
-            ((IEntityInternal)entity).SetComponents(components);
+            ((IEntityInternal)entity).SetComponentsInEntityCache(components);
             if (entityPredicate((T)component.Data, entity))
             {
                 return entity;
@@ -1319,7 +1330,7 @@ public class EcsStorage : IEcsStorage
             }
 
             IEntity entity = createEntity(id);
-            ((IEntityInternal)entity).SetComponents(components);
+            ((IEntityInternal)entity).SetComponentsInEntityCache(components);
             if (entityPredicate(component.Data, entity))
             {
                 return entity;
@@ -1334,7 +1345,7 @@ public class EcsStorage : IEcsStorage
         Component[] components = getComponentsById(entity.Id, componentType);
         if (components.Length > 0)
         {
-            ((IEntityInternal)entity).SetComponents(components);
+            ((IEntityInternal)entity).SetComponentsInEntityCache(components);
         }
 
         return components;
@@ -1578,7 +1589,7 @@ public class EcsStorage : IEcsStorage
                                                           componentType, component, oldComponent));
         }
 
-        ((IEntityInternal)entity).SetComponents(component);
+        ((IEntityInternal)entity).SetComponentsInEntityCache(component);
     }
 
     private static bool setVersion(string entityId, ref Component component, Component existingComponent, Type type)

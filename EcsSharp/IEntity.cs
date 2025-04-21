@@ -66,5 +66,5 @@ public interface IEntity
 
 internal interface IEntityInternal
 {
-    void SetComponents(params Component[] components);
+    void SetComponentsInEntityCache(params Component[] components);
 }

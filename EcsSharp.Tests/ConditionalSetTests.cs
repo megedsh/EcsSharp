@@ -89,7 +89,7 @@ namespace EcsSharp.Tests
             Suv suv1 = new Suv("A");
             IEntity _ = repo.EntityBuilder().WithComponents(sedan1, suv1).Build();
             IEntity entity2 = repo.QuerySingle([typeof(Sedan)]);
-            Assert.AreEqual(1,    entity2.CachedComponents.Length);
+            Assert.AreEqual(2,    entity2.CachedComponents.Length);
             Assert.AreEqual(sedan1, entity2.CachedComponents[0].Data);
 
             IEntity entity3 = repo.QuerySingle([typeof(Sedan), typeof(Suv)]);

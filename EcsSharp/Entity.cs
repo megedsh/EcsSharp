@@ -177,7 +177,7 @@ public class Entity : IEntity, IEntityInternal
 
     public override string ToString() => $"{nameof(Id)}: {Id}";
 
-    public void SetComponents(params Component[] components)
+    public void SetComponentsInEntityCache(params Component[] components)
     {
         foreach (Component component in components)
         {
