@@ -29,6 +29,8 @@ public class EcsStorage : IEcsStorage
     public event Action<ComponentDeletedEventArgs[]> OnComponentDeleted;
     public event Action<EntityCreatedEventArgs[]> OnEntitiesCreated;
 
+    public ITypeFamilyProvider TypeFamilyProvider { get; init; } = new AllInterfacesFamilyProvider();
+
     #region Create
 
     public IEntity Create() => Create(Array.Empty<object>(), Array.Empty<string>());
