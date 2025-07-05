@@ -7,15 +7,14 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageProjectUrl>https://github.com/megedsh/EcsSharp/</PackageProjectUrl>
 		<PackageIcon>..\EcsSharpIcon.png</PackageIcon>		
 		<PackageTags>ecs ECS Entity Component System EntityComponentSystem</PackageTags>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<None Include="..\LICENSE.txt" Pack="true" PackagePath=""/>
+	<ItemGroup>		
 		<None Include="..\README.md" Pack="true" PackagePath=""/>
 		<None Include="..\EcsSharpIcon.png" Pack="true" PackagePath=""/>
 	</ItemGroup>
