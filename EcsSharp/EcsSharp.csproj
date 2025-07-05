@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" >
 
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
@@ -6,5 +6,19 @@
 		<StartupObject />
 		<LangVersion>default</LangVersion>
 	</PropertyGroup>
+
+	<PropertyGroup>
+		<!-- Other properties -->
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Include="..\LICENSE.txt" Pack="true" Link="LICENSE.txt" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" Link="README.md" />
+	</ItemGroup>
 
 </Project>
