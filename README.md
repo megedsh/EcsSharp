@@ -96,6 +96,28 @@ entity1.SetComponent(sedanB); // the SedanA component will be replaced with Seda
 entity1.SetComponent(suvA); // suvA will be added to the entity, which will now contain 2 components
 ```
 
+## Component Interfaces
+By default, all components added could also be queried by their interface.
+This option can be overridden by setting a custom ITypeFamilyProvider to the repo and the events 
+when creating a new component, only the interface types provided by the TypeFamilyProvider will be available for quering
+```csharp
+ExplicitInterfacesFamilyProvider tfp = new ExplicitInterfacesFamilyProvider();
+tfp.Add(typeof(Sedan), typeof(ICar));
+tfp.Add(typeof(Suv),   typeof(ICar));
+
+
+IEventInvocationManager invocationManager = new DefaultEventInvocationManager();
+IEcsEventService eventService = new EcsEventService(invocationManager)
+{
+  TypeFamilyProvider = tfp
+};
+IEcsStorage storage = new EcsStorage
+{
+  TypeFamilyProvider = tfp
+};
+return new EcsRepo("test", storage, eventService);
+```
+
 ## Tagging entities
 Simple string tags can be used to mark the entity for easier retrieval and deletion.
 The entities are indexd by their tags and most functionality allows filtering by these tags.
