@@ -5,15 +5,13 @@ name: .NET
 
 on:
   push:
-    branches: [ "master" ]
-    paths-ignore:
-      - '.github/**'
-
+    paths-ignore:
+     - '.github/**'
+    branches: [ "master" ]   
   pull_request:
     branches: [ "master" ]
-    paths-ignore:
-      - '.github/**'
-
+  
+    
 jobs:
   build:
     name: Build and Test
