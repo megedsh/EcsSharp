@@ -14,9 +14,13 @@ public class InvaderCount : Int32Component
 
     public static bool operator ==(InvaderCount a, int b)
     {
-        double? d = a?.Data;
+        int? d = a?.Data;
         return d != null && d.Equals(b);
     }
 
     public static bool operator !=(InvaderCount a, int b) => !(a == b);
+
+    public override bool Equals(object obj) => base.Equals(obj);
+
+    public override int GetHashCode() => Data.GetHashCode();
 }

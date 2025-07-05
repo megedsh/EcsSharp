@@ -20,4 +20,8 @@ public class DamageComponent : DoubleComponent
     }
 
     public static bool operator !=(DamageComponent a, double b) => !(a == b);
+
+    public override bool Equals(object obj) => base.Equals(obj);
+
+    public override int GetHashCode() => Data.GetHashCode();
 }

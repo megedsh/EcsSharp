@@ -36,7 +36,7 @@ public class Location
 
     public bool Equals(Location other) => X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (ReferenceEquals(null, obj))
         {
