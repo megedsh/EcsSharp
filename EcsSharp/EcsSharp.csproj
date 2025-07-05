@@ -10,7 +10,7 @@
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageProjectUrl>https://github.com/megedsh/EcsSharp/</PackageProjectUrl>
-		<PackageIcon>..\EcsSharpIcon.png</PackageIcon>		
+		<PackageIcon>EcsSharpIcon.png</PackageIcon>		
 		<PackageTags>ecs ECS Entity Component System EntityComponentSystem</PackageTags>
 	</PropertyGroup>
 
