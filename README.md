@@ -1,3 +1,5 @@
+![EcsSharpIcon.png](EcsSharpIcon.png)
+
 # Introduction 
 
 The Entity Component System (ECS) is the core of Data-Oriented Tech Stack. As the name indicates, ECS has three principal parts:
