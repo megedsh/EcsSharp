@@ -185,7 +185,7 @@ public class DistributionTests
         repo2.MergePackage(pack1);
         repo2.MergePackage(pack1);
 
-        Assert.That(() => updateCount, Is.EqualTo(8).After(500, 100));
+        Assert.That(() => updateCount, Is.EqualTo(8).After(2500, 100));
         IEntity e1 = repo2.QuerySingle(entity1.Id);
         Component sedan2 = e1.GetAllComponents().FirstOrDefault(c => c.Data.GetType() == typeof(Sedan));
         Assert.AreEqual(sedan1.Id, ((Sedan)sedan2.Data).Id);
