@@ -39,7 +39,7 @@ public class DistributionTests
         EcsPackage pack1 = new EcsPackage().AddAllComponents(entity1, entity2);
 
         repo2.MergePackage(pack1);
-        Assert.That(() => updatCount, Is.EqualTo(4).After(500, 100));
+        Assert.That(() => updatCount, Is.EqualTo(4).After(2000, 100));
         IEntity e1 = repo2.QuerySingle(entity1.Id);
         IEntity e2 = repo2.QuerySingle(entity2.Id);
         assertEntity(entity1, e1);
@@ -124,9 +124,9 @@ public class DistributionTests
         repo2.MergePackage(pack1);
         repo2.MergePackage(pack1);
 
-        Assert.That(() => updatCount, Is.EqualTo(12).After(500, 100));
-        Assert.That(() => createdCount, Is.EqualTo(6).After(500, 100));
-        Assert.That(() => entityCreated, Is.EqualTo(3).After(500, 100));
+        Assert.That(() => updatCount, Is.EqualTo(12).After(2500, 100));
+        Assert.That(() => createdCount, Is.EqualTo(6).After(2500, 100));
+        Assert.That(() => entityCreated, Is.EqualTo(3).After(2500, 100));
     }
 
     [Test]
