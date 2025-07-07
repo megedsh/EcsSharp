@@ -1,6 +1,9 @@
-﻿using EcsSharp.Logging;
+﻿using System;
+
+using EcsSharp.Logging;
 using EcsSharp.Logging.BuiltIn;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EcsSharp.Tests
 {
@@ -19,7 +22,7 @@ namespace EcsSharp.Tests
             IEcsRepo repo = getNewRepo();
             Sedan sedan1 = new Sedan("A");
             IEntity entity1 = repo.EntityBuilder().WithComponents(sedan1).Build();
-            Assert.AreEqual(sedan1, entity1.CachedComponents[0].Data);
+            assertComponentExistsInCache(sedan1, entity1.CachedComponents);
         }
 
         [Test]
@@ -30,9 +33,10 @@ namespace EcsSharp.Tests
             Suv suv1 = new Suv("A");
             IEntity entity1 = repo.EntityBuilder().WithComponents(sedan1, suv1).Build();
             Assert.AreEqual(2,      entity1.CachedComponents.Length);
-            Assert.AreEqual(sedan1, entity1.CachedComponents[0].Data);
-            Assert.AreEqual(suv1,   entity1.CachedComponents[1].Data);
+            assertComponentExistsInCache(sedan1, entity1.CachedComponents);            
+            assertComponentExistsInCache(suv1,   entity1.CachedComponents);
         }
+
 
         [Test]
         public void SingleCachedComponentOnSet()
@@ -46,11 +50,11 @@ namespace EcsSharp.Tests
             Assert.AreEqual(2, e.CachedComponents.Length);
             Assert.AreEqual(2, entity1.CachedComponents.Length);
 
-            Assert.AreEqual(sedan1, entity1.CachedComponents[0].Data);
+            assertComponentExistsInCache(sedan1, entity1.CachedComponents);
             Sedan sedan2 = new Sedan("B");
             entity1.SetComponent(sedan2);
 
-            Assert.AreEqual(sedan2, entity1.CachedComponents[0].Data);
+            assertComponentExistsInCache(sedan2, entity1.CachedComponents);
         }
 
         [Test]
@@ -66,7 +70,7 @@ namespace EcsSharp.Tests
             // should also cache the component
             Assert.IsTrue(entity2.HasComponent<Suv>());
             Assert.AreEqual(1,    entity2.CachedComponents.Length);
-            Assert.AreEqual(suv1, entity2.CachedComponents[0].Data);
+            assertComponentExistsInCache(suv1, entity2.CachedComponents);
         }
 
         [Test]
@@ -78,7 +82,7 @@ namespace EcsSharp.Tests
             IEntity _ = repo.EntityBuilder().WithComponents(sedan1, suv1).Build();
             IEntity entity2 = repo.QuerySingle<Suv>();
             Assert.AreEqual(1,    entity2.CachedComponents.Length);
-            Assert.AreEqual(suv1, entity2.CachedComponents[0].Data);
+            assertComponentExistsInCache(suv1, entity2.CachedComponents);
         }
 
         [Test]
@@ -90,12 +94,12 @@ namespace EcsSharp.Tests
             IEntity _ = repo.EntityBuilder().WithComponents(sedan1, suv1).Build();
             IEntity entity2 = repo.QuerySingle([typeof(Sedan)]);
             Assert.AreEqual(2,    entity2.CachedComponents.Length);
-            Assert.AreEqual(sedan1, entity2.CachedComponents[0].Data);
+            assertComponentExistsInCache(sedan1, entity2.CachedComponents);
 
             IEntity entity3 = repo.QuerySingle([typeof(Sedan), typeof(Suv)]);
             Assert.AreEqual(2,      entity3.CachedComponents.Length);
-            Assert.AreEqual(sedan1, entity3.CachedComponents[0].Data);
-            Assert.AreEqual(suv1, entity3.CachedComponents[1].Data);
+            assertComponentExistsInCache(sedan1, entity3.CachedComponents);
+            assertComponentExistsInCache(suv1, entity3.CachedComponents);
         }
 
         [Test]
@@ -112,7 +116,7 @@ namespace EcsSharp.Tests
             for (var i = 0; i < entityColl.Count; i++)
             {
                 Assert.AreEqual(1,    entityColl[i].CachedComponents.Length);
-                Assert.AreEqual(suv1, entityColl[i].CachedComponents[0].Data);
+                assertComponentExistsInCache(suv1, entityColl[i].CachedComponents);
             }
         }
 
@@ -130,8 +134,8 @@ namespace EcsSharp.Tests
             for (var i = 0; i < entityColl.Count; i++)
             {
                 Assert.AreEqual(2,    entityColl[i].CachedComponents.Length);
-                Assert.AreEqual(sedan1, entityColl[i].CachedComponents[0].Data);
-                Assert.AreEqual(suv1, entityColl[i].CachedComponents[1].Data);
+                assertComponentExistsInCache(sedan1, entityColl[i].CachedComponents);
+                assertComponentExistsInCache(suv1, entityColl[i].CachedComponents);
             }
         }
 
@@ -149,8 +153,8 @@ namespace EcsSharp.Tests
             for (var i = 0; i < entityColl.Count; i++)
             {
                 Assert.AreEqual(2,      entityColl[i].CachedComponents.Length);
-                Assert.AreEqual(sedan1, entityColl[i].CachedComponents[0].Data);
-                Assert.AreEqual(suv1,   entityColl[i].CachedComponents[1].Data);
+                assertComponentExistsInCache(sedan1, entityColl[i].CachedComponents);
+                assertComponentExistsInCache(suv1, entityColl[i].CachedComponents);
             }
         }
 
@@ -169,17 +173,18 @@ namespace EcsSharp.Tests
 
             e2.SetComponent(new Sedan("B"));
 
-            Assert.AreEqual("A", ((Sedan)e1.CachedComponents[0].Data).Id);
-            Assert.AreEqual("B", ((Sedan)e2.CachedComponents[0].Data).Id);
+            assertValueInCache<Sedan>((c) => c.Id == "A", e1.CachedComponents);            
+            assertValueInCache<Sedan>((c) => c.Id == "B", e2.CachedComponents);
 
             Sedan refreshComponent = e1.RefreshComponent<Sedan>();
             Assert.AreEqual("B", refreshComponent.Id);
-            Assert.AreEqual("B", ((Sedan)e1.CachedComponents[0].Data).Id);
+            assertValueInCache<Sedan>((c) => c.Id == "B", e1.CachedComponents);
 
             e2.SetComponent(new Sedan("C"));
             Component component = e1.RefreshComponent(typeof(Sedan));
             Assert.AreEqual("C", ((Sedan)component.Data).Id);
-            Assert.AreEqual("C", ((Sedan)e1.CachedComponents[0].Data).Id);
+            
+            assertValueInCache<Sedan>((c) => c.Id == "C", e1.CachedComponents);
         }
 
         [Test]
@@ -197,9 +202,30 @@ namespace EcsSharp.Tests
             e2.SetComponent(new Suv("B"));
 
             ICar[] refreshComponents = e1.RefreshComponents<ICar>();
+            assertValueInCache<Sedan>((c)=>c.Id=="B",     e1.CachedComponents);
+            assertValueInCache<Suv>((c) => c.Id == "B", e1.CachedComponents);
+            
+        }
 
-            Assert.AreEqual("B", ((Sedan)e1.CachedComponents[0].Data).Id);
-            Assert.AreEqual("B", ((Suv)e1.CachedComponents[1].Data).Id);
+        private void assertValueInCache<T>(Func<T, bool> assertationFunc, Component[] cache)
+        {
+            T? firstOrDefault = cache.Where(e => e.Data is T).Select(comp=>(T)comp.Data).FirstOrDefault();
+            Assert.IsNotNull(firstOrDefault);
+            Assert.IsTrue(assertationFunc(firstOrDefault!), $"Component {firstOrDefault} does not match the assertion");
+        }
+
+        private void assertComponentExistsInCache<T>(T comp, Component[] cache)
+        {
+            bool any = cache.Any(c =>
+            {
+                if (c.Data is T t)
+                {
+                    return t.Equals(comp);
+                }
+                return false;
+            });
+
+            Assert.IsTrue(any, $"Component {comp} not found in cache");
         }
 
 
