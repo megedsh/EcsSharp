@@ -332,6 +332,32 @@ repo.Events.TaggedEntitiesDeleted["foo"] += args => doOnEntityDeleted(args); // 
 
 ```
 
+# Component changes collector
+Use this feature to collect change and deletes of repository entities. Usually useful when distribution is needed, and you want to distribute only entities that changed
+during a span of time
+```csharp
+
+// create new instance of a collector
+var collector = new ComponentChangesCollector(ecsRepo, new[] { typeof(ICar) }); 
+
+// update and delete some entities in your repository
+IEntity e1 = repo.CreateWithComponents(new Sedan("a")); 
+IEntity e2 = repo.CreateWithComponents(new Sedan("b"));
+IEntity e3 = repo.CreateWithComponents(new Suv("c"));
+repo.Delete(e2);
+repo.Delete(e3);
+
+//using the Pop() function will create a report and reset the collector
+CollectorReport collectorReport = collector.Pop();
+
+// the collector report holds all the entities changed or deleted during the time span.
+EntityUpdatedEventArgs[] updated = collectorReport.Updated;
+EntityDeletedEventArgs[] deleted = collectorReport.Deleted;
+
+
+
+```
+
 # Distribution of entities and components
 the ECS in itself does not supply a distribution mechanism.  It does supply utilities to assist in distributing data to other nodes using standard messageing transports.
 - EcsPackage - A container that is used to aggregate ECS changes
