@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace EcsSharp;
 
@@ -8,7 +9,7 @@ public interface IEntity
     string[] Tags { get; }
     T           GetComponent<T>();
     T[]         GetComponents<T>();
-    Component   GetComponent(Type componentType);
+    Component   GetComponent(Type  componentType);
     Component[] GetComponents(Type componentType);
     Component[] GetAllComponents();
     T           RefreshComponent<T>();
@@ -37,34 +38,35 @@ public interface IEntity
     /// <param name="setWhenNotExist"></param>
     /// <returns>returns 'true' if component was updated</returns>
     bool ConditionalSet<T>(Predicate<T> condition, Func<T, T> componentFactory, bool setWhenNotExist = true);
+
     /// <summary>
-    /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="component"></param>
     /// <returns>returns 'true' if component was updated</returns>
-    bool    SetWhenNotEqual<T>(T component);
+    bool SetWhenNotEqual<T>(T component);
+
     /// <summary>
-    /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="componentFactory"></param>
     /// <param name="setWhenNotExist"></param>
     /// <returns>returns 'true' if component was updated</returns>
-    bool    SetWhenNotEqual<T>(Func<T, T> componentFactory, bool setWhenNotExist = true);
+    bool SetWhenNotEqual<T>(Func<T, T> componentFactory, bool setWhenNotExist = true);
+
     IEntity UpdateComponent<T>(Func<T, T> componentFactory, bool setWhenNotExist = true);
     bool    HasComponent<T>();
     bool    HasComponent(Type type);
 
-    IEntity AddTag(params string[] tag);
-    bool    HasTag(params string[] tag);
+    IEntity AddTag(params    string[] tag);
+    bool    HasTag(params    string[] tag);
     bool    HasAnyTag(params string[] tag);
 
     Component[] CachedComponents { get; }
-    bool Exists();
+    bool    Exists();
+    IEntity Clone();
 }
-
 internal interface IEntityInternal
 {
-    void SetComponentsInEntityCache(params Component[] components);
+    void SetComponentsInEntityCache(params IEnumerable<Component> components);
 }

@@ -4,5 +4,6 @@ namespace EcsSharp
 {
     public interface IEntityCollection : IReadOnlyList<IEntity>
     {
+        IEntityCollection Clone();
     }
 }

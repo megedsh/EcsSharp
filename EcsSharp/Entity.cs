@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-
 using EcsSharp.Storage;
 
 namespace EcsSharp;
@@ -157,7 +156,13 @@ public class Entity : IEntity, IEntityInternal
 
     public Component[] CachedComponents => m_cachedComponents.Values.ToArray();
 
-    public bool Exists() => m_ecsStorage.QuerySingle(Id) != null;
+    public bool    Exists() => m_ecsStorage.QuerySingle(Id) != null;
+    public IEntity Clone()
+    {
+        Entity clone = new Entity(m_ecsStorage, Id, m_tags);
+        clone.SetComponentsInEntityCache(m_cachedComponents.Values);
+        return clone;
+    }
 
     private HashSet<string> getReadOnlyTags()
     {
@@ -177,7 +182,7 @@ public class Entity : IEntity, IEntityInternal
 
     public override string ToString() => $"{nameof(Id)}: {Id}";
 
-    public void SetComponentsInEntityCache(params Component[] components)
+    public void SetComponentsInEntityCache(params IEnumerable<Component> components)
     {
         foreach (Component component in components)
         {
@@ -294,7 +299,7 @@ public class Entity : IEntity, IEntityInternal
         }
     }
 
-    protected bool Equals(IEntity other) => Id == other.Id;
+    public bool Equals(IEntity other) => Id == other.Id;
 
     public override bool Equals(object obj)
     {
