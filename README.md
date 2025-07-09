@@ -1,4 +1,7 @@
-![EcsSharpIcon.png](EcsSharpIcon.png)
+[![License](https://img.shields.io/github/license/megedsh/EcsSharp.svg)](https://github.com/megedsh/EcsSharp/blob/master/LICENSE.txt) 
+[![NuGet](https://img.shields.io/nuget/v/EcsSharp.svg)](https://nuget.org/packages/EcsSharp) 
+
+<img src="EcsSharpIcon.png" width="300">
 
 # Introduction 
 
