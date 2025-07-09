@@ -12,11 +12,15 @@ The Entity Component System (ECS) is the core of Data-Oriented Tech Stack. As th
 * **Systems** — the logic that transforms the component data from its current state to its next state— for example, a system might update the positions of all moving entities by their velocity times the time interval since the previous frame.
 
 # Resources
-Some lite reading:
 - [Resource](https://www.google.com/search?q=entity+component+system+architecture&oq=entity+component+system+architecture&gs_lcrp=EgZjaHJvbWUyCQgAEEUYORiABDIICAEQABgWGB4yCAgCEAAYFhgeMg0IAxAAGIYDGIAEGIoFMg0IBBAAGIYDGIAEGIoFMg0IBRAAGIYDGIAEGIoFMgYIBhBFGDwyBggHEEUYPNIBCDEyMjNqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8)
-- [FAQ](https://github.com/SanderMertens/ecs-faq)
+- [ECS FAQ](https://github.com/SanderMertens/ecs-faq)
 
-
+# Why EcsSharp ?
+I built this repository because the existing ones did not have the features that I needed. 
+* Events - Knowing when an entity/component has changed or deleted. Yes, I know it is an anti-pattern. I wanted it anyway.
+* Tags - Adding tags to entities makes it less complicated to query. Yes, another anti-pattern. 
+* Quering by component interfaces.
+* Change collectors - based on events
 
 # Getting Started
 Add EcsSharp dependency from Nuget
