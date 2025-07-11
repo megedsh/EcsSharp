@@ -29,7 +29,7 @@ Add EcsSharp dependency from Nuget
 nuget install EcsSharp
 ```
 
-Create a singelton Ecs Repository in your application
+Create an Ecs Repository - you are not limited to one repository. for small applications one is enough
 
 ``` csharp
 IEcsRepo ecsRepo = new DefaultEcsRepoFactory().Create();
