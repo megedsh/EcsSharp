@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Linq;
+
 using EcsSharp.Collectors;
 using EcsSharp.Events.EventArgs;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests
@@ -27,11 +30,13 @@ namespace EcsSharp.Tests
             Assert.That(() => subject.HasUpdates, Is.False);
             Assert.AreEqual(2, updated.Length);
             Assert.AreEqual(1, deleted.Length);
+            Assert.IsTrue(updated.Select(u => u.Entity).Any(e => e.Equals(e1)));
+            Assert.IsTrue(updated.Select(u => u.Entity).Any(e => e.Equals(e2)));
+            Assert.IsTrue(deleted.Select(u => u.Entity).Any(e => e.Equals(e2)));
 
-            Assert.AreEqual(e1, updated[0].Entity);
-            Assert.AreEqual(e2, updated[1].Entity);
-            Assert.AreEqual(e2, deleted[0].Entity);
-            Assert.AreEqual(1,updated[0].ComponentEventArgs.Length);
+            ComponentUpdatedEventArgs[]? componentUpdatedEventArgsArray = updated.Where(e => e.Entity.Equals(e1)).Select(u => u.ComponentEventArgs).FirstOrDefault();
+
+            Assert.AreEqual(1, componentUpdatedEventArgsArray!.Length);
         }
 
         private ComponentChangesCollector getSubject(Type[] components, out IEcsRepo ecsRepo)
