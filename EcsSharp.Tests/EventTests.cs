@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using EcsSharp.Events.EventArgs;
 using EcsSharp.Helpers;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests;
@@ -97,8 +99,8 @@ public class EventsTests
         List<ComponentDeletedEventArgs> l1 = new();
         List<ComponentDeletedEventArgs> l2 = new();
 
-        repo.Events.ComponentDeleted[typeof(ICar)] += args => l1.Add(args);
-        repo.Events.ComponentDeleted[typeof(Sedan)] += args => l2.Add(args);
+        repo.Events.ComponentDeletedWithEntity[typeof(ICar)] += args => l1.Add(args);
+        repo.Events.ComponentDeletedWithEntity[typeof(Sedan)] += args => l2.Add(args);
 
         Sedan car1 = new("A");
 

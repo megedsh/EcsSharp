@@ -121,6 +121,20 @@ internal class SetWhenNotEqualTests
         Assert.IsTrue(res);
     }
 
+    [Test]
+    public void SetForStruct()
+    {
+        IEcsRepo repo = getNewRepo();
+
+        int updateCounter = 0;
+        repo.Events.ComponentUpdated[typeof(VehicleColor)] += (_) => updateCounter++;
+        IEntity entity1 = repo.Create();
+        Assert.That(()=>updateCounter, Is.EqualTo(0).After(500));
+        bool res = entity1.SetWhenNotEqual(VehicleColor.Red);
+        Assert.That(()=>updateCounter, Is.EqualTo(1).After(500,100));
+        Assert.IsTrue(res);
+    }
+
     private IEcsRepo getNewRepo()
     {
         IEcsRepo ecsRepo = m_factory.Create();

@@ -2,7 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
+
 using EcsSharp.Distribute;
+using EcsSharp.Storage;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -17,10 +20,10 @@ namespace EcsSharp.Extensions.Newtonsoft
         {
         }
 
-        public override EcsPackage ReadJson(JsonReader reader,
-                                            Type objectType,
-                                            EcsPackage existingValue,
-                                            bool hasExistingValue,
+        public override EcsPackage ReadJson(JsonReader     reader,
+                                            Type           objectType,
+                                            EcsPackage     existingValue,
+                                            bool           hasExistingValue,
                                             JsonSerializer serializer)
         {
             EcsPackage result = new EcsPackage();
@@ -32,7 +35,7 @@ namespace EcsSharp.Extensions.Newtonsoft
                 JsonToken tokenType = reader.TokenType;
                 object tokenValue = reader.Value;
                 Type valueType = reader.ValueType;
-                if (tokenType != JsonToken.PropertyName || tokenValue == null || valueType != typeof(string) )
+                if (tokenType != JsonToken.PropertyName || tokenValue == null || valueType != typeof(string))
                 {
                     continue;
                 }
@@ -54,7 +57,7 @@ namespace EcsSharp.Extensions.Newtonsoft
                         string[] deletedTags = serializer.Deserialize<string[]>(reader);
                         result.AddDeleteByTag(deletedTags);
                         break;
-                    
+
                     case SerializationConst.EntityTags:
                         reader.Read();
                         entityTags = serializer.Deserialize<Dictionary<string, string[]>>(reader);
@@ -157,6 +160,7 @@ namespace EcsSharp.Extensions.Newtonsoft
                     {
                         throw new JsonException($"Failed to parse '{readAsString}'to type ulong (Version)");
                     }
+
                     version = ver;
                 }
                 else if (tokenValue != null && tokenType == JsonToken.PropertyName && valueType == typeof(string) && tokenValue.ToString().ToLower() == SerializationConst.Data)
@@ -166,7 +170,7 @@ namespace EcsSharp.Extensions.Newtonsoft
 
                 if (tokenType == JsonToken.EndObject)
                 {
-                    return new Component(version ?? 0, data);
+                    return new Component(version.Value, data);
                 }
             }
 
@@ -183,9 +187,8 @@ namespace EcsSharp.Extensions.Newtonsoft
                 return jsonSerializer.Deserialize(arrayReader, componentDataType);
             }
 
-            JObject jObject = JObject.Load(reader);
-            JsonReader jsonReader = jObject.CreateReader();
-            return jsonSerializer.Deserialize(jsonReader, componentDataType);
+            object deserialize = jsonSerializer.Deserialize(reader, componentDataType);
+            return deserialize;
         }
 
         private Type getType(string typeName)

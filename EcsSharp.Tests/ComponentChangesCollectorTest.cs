@@ -30,13 +30,64 @@ namespace EcsSharp.Tests
             Assert.That(() => subject.HasUpdates, Is.False);
             Assert.AreEqual(2, updated.Length);
             Assert.AreEqual(1, deleted.Length);
-            Assert.IsTrue(updated.Select(u => u.Entity).Any(e => e.Equals(e1)));
-            Assert.IsTrue(updated.Select(u => u.Entity).Any(e => e.Equals(e2)));
-            Assert.IsTrue(deleted.Select(u => u.Entity).Any(e => e.Equals(e2)));
 
-            ComponentUpdatedEventArgs[]? componentUpdatedEventArgsArray = updated.Where(e => e.Entity.Equals(e1)).Select(u => u.ComponentEventArgs).FirstOrDefault();
+            Assert.AreEqual(e1, updated[0].Entity);
+            Assert.AreEqual(e2, updated[1].Entity);
+            Assert.AreEqual(e2, deleted[0].Entity);
+            Assert.AreEqual(1,updated[0].ComponentEventArgs.Length);
+        }
 
-            Assert.AreEqual(1, componentUpdatedEventArgsArray!.Length);
+        [Test]
+        public void Pop_CoalescesUpdatesForEntityAndComponent()
+        {
+            ComponentChangesCollector subject = getSubject(new[] { typeof(Sedan) }, out IEcsRepo repo);
+            int delivered = 0;
+            repo.Events.ComponentUpdated[typeof(Sedan)] += _ => delivered++;
+            IEntity entity = repo.Create();
+
+            entity.SetComponent(new Sedan("A"));
+            Sedan latest = new Sedan("B");
+            entity.SetComponent(latest);
+
+            Assert.That(() => delivered, Is.EqualTo(2).After(1000, 100));
+            CollectorReport report = subject.Pop();
+            Assert.AreEqual(1, report.Updated.Length);
+            Assert.AreEqual(entity, report.Updated[0].Entity);
+            Assert.AreSame(latest, report.Updated[0].UpdatedComponents.Single().Component.Data);
+        }
+
+        [Test]
+        public void Pop_ReportsPartialComponentDeletion()
+        {
+            ComponentChangesCollector subject = getSubject(new[] { typeof(Sedan) }, out IEcsRepo repo);
+            IEntity entity = repo.CreateWithComponents(new Sedan("A"), new Suv("B"));
+            Assert.That(() => subject.HasUpdates, Is.True.After(1000, 100));
+            subject.Pop();
+
+            entity.RemoveComponent<Sedan>();
+
+            Assert.That(() => subject.HasUpdates, Is.True.After(1000, 100));
+            CollectorReport report = subject.Pop();
+            Assert.AreEqual(1, report.PartialDeleted.Length);
+            Assert.AreEqual(entity, report.PartialDeleted[0].Entity);
+            Assert.IsEmpty(report.Deleted);
+        }
+
+        [Test]
+        public void Dispose_UnsubscribesFromPartialComponentDeletions()
+        {
+            ComponentChangesCollector subject = getSubject(new[] { typeof(Sedan) }, out IEcsRepo repo);
+            IEntity entity = repo.CreateWithComponents(new Sedan("A"));
+            Assert.That(() => subject.HasUpdates, Is.True.After(1000, 100));
+            subject.Dispose();
+            int delivered = 0;
+            repo.Events.GlobalComponentsRemovedFromEntity += _ => delivered++;
+
+            entity.RemoveComponent<Sedan>();
+
+            Assert.That(() => delivered, Is.EqualTo(1).After(1000, 100));
+            Assert.IsEmpty(subject.Pop().PartialDeleted);
+            Assert.IsFalse(subject.HasUpdates);
         }
 
         private ComponentChangesCollector getSubject(Type[] components, out IEcsRepo ecsRepo)

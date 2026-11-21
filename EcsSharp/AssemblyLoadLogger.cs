@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using System.Text;
-using EcsSharp.Logging;
 
 namespace EcsSharp
 {

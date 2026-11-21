@@ -1,23 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using EcsSharp.Distribute;
 using EcsSharp.Events.EventArgs;
 using EcsSharp.Helpers;
 
 namespace EcsSharp.Storage
 {
-    public interface IEcsStorage
+    public interface IEcsStorage : IEcsStorageInternal
     {
+        IEcsRepo EcsRepo { get; }
         event Action<EntityCreatedEventArgs[]> OnEntitiesCreated;
         event Action<ComponentUpdatedEventArgs[]> OnComponentUpdated;
         event Action<ComponentCreatedEventArgs[]> OnComponentCreated;
         event Action<ComponentDeletedEventArgs[]> OnComponentDeleted;
+        //event Action<ComponentDeletedEventArgs[]> OnPartialComponentDeleted;    
         IEntity           Create();
         IEntity Create(object[] components, IEnumerable<string> tags, string id = null);
         IEntity CreateWithComponents(params object[] components);
         IEntity CreateOrGetWithId(string id, string[] tags = null);
         void              SetComponent<T>(IEntity entity, T component);
         void              SetComponents(IEntity entity, params object[] components);
+        public bool RemoveComponent<T>(IEntity entity);
+        public bool RemoveComponent(IEntity entity, Type componentType);
+
         bool ConditionalSet<T>(Entity entity, T component, ComponentSetCondition<T> condition, bool setWhenNotExist = true);
         bool ConditionalSet<T>(Entity entity, Predicate<T> condition, Func<T,T> componentFactory, bool setWhenNotExist = true);
         bool SetWhenNotEqual<T>(Entity entity, T component, bool setWhenNotExist = true);
@@ -38,8 +44,8 @@ namespace EcsSharp.Storage
         void              DeleteEntity(string                   id);
         void              DeleteEntitiesWithTag(params string[] tags);
         void              MergePackage(EcsPackage               ecsPackage);
-        void              BatchUpdate(IEcsRepo                  repo, Action<IEcsRepo>  batch);
-        T                 BatchQuery<T>(EcsRepo                 repo, Func<IEcsRepo, T> queryFunc);
+        void              BatchUpdate(IEcsRepo                  repo,   Action<IEcsRepo> batch);
+        void              EntityBatchUpdate(IEntity             entity, IEnumerable< Action<IEcsStorage>> batch);
         IEntityCollection Query(params string[]                 ids);
         IEntityCollection Query<T>(string[]                     tags                                                            = null);
         IEntityCollection Query<T>(Predicate<T>                 componentPredicate, string[]                    tags            = null);
@@ -65,6 +71,10 @@ namespace EcsSharp.Storage
                                                            Func<IEntity, TKey> keyFactory,
                                                            IEcsRepo ecsRepo);
 
-        IEntity QuerySingleByTags(params string[] tags);        
+        IEntity QuerySingleByTags(params string[] tags);
+    }
+    public interface IEcsStorageInternal
+    {
+        void SetRepo(IEcsRepo repo);
     }
 }

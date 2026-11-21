@@ -2,10 +2,22 @@
 using System.Linq;
 using System.Threading.Tasks;
 
+using EcsSharp.Helpers.Synchronizer;
+
 namespace EcsSharp.Events;
 
 public class DefaultEventInvocationManager : IEventInvocationManager
 {
+    private readonly TplSynchronizer m_invocationSynchronizer;
+
+    public DefaultEventInvocationManager()
+    {
+        SynchronizerConfig synchronizerConfig = new SynchronizerConfigBuilder()
+                                                .WithId("EcsEventInvocation")
+                                                .Build();
+        m_invocationSynchronizer = new TplSynchronizer(synchronizerConfig);
+    }
+
     public Task Invoke(ICollection<EventArgsAndDelegatePair> pairs)
     {
         Task[] array = pairs.SelectMany(fireAllEvents).ToArray();
@@ -16,6 +28,6 @@ public class DefaultEventInvocationManager : IEventInvocationManager
     {
         IEnumerable<DelegateWrapper> delegatesForType = eventArgsAndDelegatePair.DelegatesForType;
         object eventArgs = eventArgsAndDelegatePair.EventArgs;
-        return delegatesForType.Select(d => Task.Run(() => d.Invoke(eventArgs)));
+        return delegatesForType.Select(d => m_invocationSynchronizer.QueueInvocation(() => d.Invoke(eventArgs)));
     }
 }

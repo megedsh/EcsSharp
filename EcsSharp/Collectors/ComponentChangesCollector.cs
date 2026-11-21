@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
+using EcsSharp.Events;
 using EcsSharp.Events.EventArgs;
 
 namespace EcsSharp.Collectors
@@ -11,6 +13,7 @@ namespace EcsSharp.Collectors
         private readonly Dictionary<Type, ComponentUpdatesAggregator> m_typeToAggregatorMap = new();
         private readonly HashSet<Type>                                m_typesSet;
         private readonly List<EntityDeletedEventArgs>                 m_deleted;
+        private readonly List<ComponentRemovedFromEntityEventArgs>          m_partial;
         private readonly object                                       m_sync = new object();
 
         public ComponentChangesCollector(IEcsRepo ecsRepo, Type[] componentTypes)
@@ -19,6 +22,7 @@ namespace EcsSharp.Collectors
             m_ecsRepo = ecsRepo;
             m_ecsRepo.Events.GlobalUpdated += onUpdated;
             m_ecsRepo.Events.GlobalDeleted += onDeleted;
+            m_ecsRepo.Events.GlobalComponentsRemovedFromEntity += onComponentDeleted;
             foreach (Type componentType in componentTypes)
             {
                 ComponentUpdatesAggregator ca = new ComponentUpdatesAggregator(componentType);
@@ -26,7 +30,10 @@ namespace EcsSharp.Collectors
             }
 
             m_deleted = new List<EntityDeletedEventArgs>();
+            m_partial = new List<ComponentRemovedFromEntityEventArgs>();
         }
+
+        
 
         public bool HasUpdates { get; private set; }
 
@@ -36,18 +43,23 @@ namespace EcsSharp.Collectors
             EntityDeletedEventArgs[] deleted;
 
             ComponentUpdatedEventArgs[] updated;
+            ComponentRemovedFromEntityEventArgs[] partial;
             lock(m_sync)
             {
                 updated = m_typeToAggregatorMap.Values.SelectMany(s => s.PopAllMessages()).ToArray();
                 deleted = m_deleted.OrderBy(s => s.ModifiedDate).ToArray();
+                partial = m_partial.OrderBy(s => s.ModifiedDate).ToArray();
                 m_deleted.Clear();
+                m_partial.Clear();
                 HasUpdates = false;
             }
 
-            return createReport(updated, deleted);
+            return createReport(updated, deleted,partial);
         }
 
-        private static CollectorReport createReport(ComponentUpdatedEventArgs[] updated, EntityDeletedEventArgs[] deleted)
+        private static CollectorReport createReport(ComponentUpdatedEventArgs[] updated,
+                                                    EntityDeletedEventArgs[] deleted,
+                                                    ComponentRemovedFromEntityEventArgs[] partial)
         {
             Dictionary<IEntity, List<ComponentUpdatedEventArgs>> dict = new Dictionary<IEntity, List<ComponentUpdatedEventArgs>>();
             foreach (ComponentUpdatedEventArgs c in updated)
@@ -66,7 +78,8 @@ namespace EcsSharp.Collectors
             return new CollectorReport
             {
                 Updated = entityUpdatedEventArgsArray,
-                Deleted = deleted
+                Deleted = deleted,
+                PartialDeleted = partial
             };
         }
 
@@ -81,6 +94,26 @@ namespace EcsSharp.Collectors
                         lock(m_sync)
                         {
                             m_deleted.Add(ea);
+                            HasUpdates = true;
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void onComponentDeleted(ComponentsRemovedFromEntitiesEventArgs eventArgs)
+        {
+            foreach (ComponentRemovedFromEntityEventArgs ea in eventArgs)
+            {
+                foreach (ComponentDeletedEventArgs dc in ea.DeletedComponents)
+                {
+                    if (m_typesSet.Contains(dc.ComponentType))
+                    {
+                        lock(m_sync)
+                        {
+                            m_partial.Add(ea);
                             HasUpdates = true;
                         }
 
@@ -108,11 +141,15 @@ namespace EcsSharp.Collectors
             }
         }
 
+   
+
+
         public void Dispose()
         {
             CollectorReport _ = Pop();
             m_ecsRepo.Events.GlobalUpdated -= onUpdated;
             m_ecsRepo.Events.GlobalDeleted -= onDeleted;
+            m_ecsRepo.Events.GlobalComponentsRemovedFromEntity -= onComponentDeleted;
         }
     }
 
@@ -148,5 +185,6 @@ namespace EcsSharp.Collectors
     {
         public EntityUpdatedEventArgs[] Updated { get; init; }
         public EntityDeletedEventArgs[] Deleted { get; init; }
+        public ComponentRemovedFromEntityEventArgs[] PartialDeleted { get; init; }
     }
 }
