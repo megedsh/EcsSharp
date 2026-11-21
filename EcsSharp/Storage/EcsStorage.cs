@@ -798,6 +798,22 @@ public class EcsStorage : IEcsStorage
         }
     }
 
+    public T BatchQuery<T>(EcsRepo repo, Func<IEcsRepo, T> queryFunc)
+    {
+        enterReadLock();
+        try
+        {
+            T res = queryFunc(repo);
+            releaseAllLocks();
+            return res;
+        }
+        catch (Exception e)
+        {
+            logAndReleaseLock(e);
+            return default;
+        }
+    }
+
     public void EntityBatchUpdate(IEntity entity, IEnumerable<Action<IEcsStorage>> batch)
     {
         try

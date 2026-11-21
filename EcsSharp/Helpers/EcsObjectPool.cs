@@ -18,6 +18,7 @@ namespace EcsSharp.Helpers
             private static readonly ICommonLog s_log = CommonLogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
 
             private readonly Dictionary<Type, Func<object>>          m_factoryMap        = new();
+            // Total objects ever created per type (not the number currently checked out); guarded by m_sync.
             private readonly Dictionary<Type, uint>                  m_objectCounters    = new();
             private readonly Dictionary<Type, ConcurrentBag<object>> m_objectPool        = new();
             private readonly Dictionary<Type, Action<object>>        m_releaseMethodsMap = new();
@@ -82,8 +83,6 @@ namespace EcsSharp.Helpers
                 {
                     bag.Add(obj);
                 }
-
-                m_objectCounters[type]--;
             }
         }
  

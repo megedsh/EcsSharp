@@ -91,6 +91,7 @@ namespace EcsSharp
             m_ecsStorage.BatchUpdate(this, batch);
         }
 
+        
         public IEntity CreateOrGetByComponent<T>(T component, Predicate<T> componentPredicate = null, string[] tags = null) => m_ecsStorage.CreateOrGetByComponent(component, componentPredicate, tags);
 
         public IEntityCollection Query<T>(string[] tags = null) => m_ecsStorage.Query<T>(tags);
@@ -128,6 +129,10 @@ namespace EcsSharp
                                                                   Func<IEntity, TKey> keyFactory) => m_ecsStorage.CreateLookupBucket(addPredicate, keyFactory, this);
 
         public IEntity QuerySingleByTags(params string[] tags) => m_ecsStorage.QuerySingleByTags(tags);
+        public T              BatchQuery<T>(Func<IEcsRepo, T>   batch)
+        {
+            return m_ecsStorage.BatchQuery(this, batch);
+        }
 
         private void onEntitiesCreated(EntityCreatedEventArgs[] args)
         {

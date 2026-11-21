@@ -44,8 +44,9 @@ namespace EcsSharp.Storage
         void              DeleteEntity(string                   id);
         void              DeleteEntitiesWithTag(params string[] tags);
         void              MergePackage(EcsPackage               ecsPackage);
-        void              BatchUpdate(IEcsRepo                  repo,   Action<IEcsRepo> batch);
-        void              EntityBatchUpdate(IEntity             entity, IEnumerable< Action<IEcsStorage>> batch);
+        void              BatchUpdate(IEcsRepo                  repo,    Action<IEcsRepo>                  batch);
+        T                 BatchQuery<T>(EcsRepo                 ecsRepo, Func<IEcsRepo, T>                 batch);
+        void              EntityBatchUpdate(IEntity             entity,  IEnumerable< Action<IEcsStorage>> batch);
         IEntityCollection Query(params string[]                 ids);
         IEntityCollection Query<T>(string[]                     tags                                                            = null);
         IEntityCollection Query<T>(Predicate<T>                 componentPredicate, string[]                    tags            = null);
@@ -72,6 +73,8 @@ namespace EcsSharp.Storage
                                                            IEcsRepo ecsRepo);
 
         IEntity QuerySingleByTags(params string[] tags);
+
+        
     }
     public interface IEcsStorageInternal
     {
