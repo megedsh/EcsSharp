@@ -1,8 +1,11 @@
 ﻿using System.Linq;
 using System.Threading;
+
 using EcsSharp.Distribute;
 using EcsSharp.Helpers;
+
 using log4net.Config;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests

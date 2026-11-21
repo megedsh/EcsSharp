@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using EcsSharp.StructComponents;
+
 using log4net.Config;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests
@@ -335,14 +338,14 @@ namespace EcsSharp.Tests
             e.SetComponent(new Sedan());
             e.SetComponent(new Sedan());
 
-            ulong version = e.GetAllComponents().Where(c => c.Data.GetType().Equals(typeof(Sedan))).FirstOrDefault().Version;
+            ulong version = e.RefreshAllComponents().Where(c => c.Data.GetType().Equals(typeof(Sedan))).FirstOrDefault().Version;
             Assert.AreEqual(3, version);
             e.SetWithVersion(new Sedan(), 55);
-            ulong version2 = e.GetAllComponents().Where(c => c.Data.GetType().Equals(typeof(Sedan))).FirstOrDefault().Version;
+            ulong version2 = e.RefreshAllComponents().Where(c => c.Data.GetType().Equals(typeof(Sedan))).FirstOrDefault().Version;
             Assert.AreEqual(55, version2);
 
             e.SetWithVersion(new Sedan(), 0);
-            ulong version3 = e.GetAllComponents().Where(c => c.Data.GetType().Equals(typeof(Sedan))).FirstOrDefault().Version;
+            ulong version3 = e.RefreshAllComponents().Where(c => c.Data.GetType().Equals(typeof(Sedan))).FirstOrDefault().Version;
             Assert.AreEqual(0, version3);
         }
 

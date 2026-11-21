@@ -9,11 +9,14 @@ namespace EcsSharp.Events
     {
         ComponentCreatedEvents ComponentCreated { get; }
         ComponentUpdatedEvents ComponentUpdated { get; }
-        ComponentDeletedEvents ComponentDeleted { get; }
+        ComponentDeletedWithEntityEvents ComponentDeletedWithEntity { get;  } 
+        ComponentRemovedFromEntityEvents ComponentRemovedFromEntity { get;  } 
+        
 
         GlobalCreatedEvent GlobalCreated { get; set; }
         GlobalUpdatedEvent GlobalUpdated { get; set; }
         GlobalDeletedEvent GlobalDeleted { get; set; }
+        ComponentsRemovedFromEntitiesEvent GlobalComponentsRemovedFromEntity { get; set; }
 
         TagCreatedEvents TaggedEntitiesCreated { get; set; }
         TagUpdatedEvents TaggedEntitiesUpdated { get; set; }
@@ -26,6 +29,6 @@ namespace EcsSharp.Events
         void InvokeComponentUpdatedDelegates(ComponentUpdatedEventArgs[] args);
         void InvokeComponentCreatedDelegates(ComponentCreatedEventArgs[] args);
         void InvokeComponentDeletedDelegates(ComponentDeletedEventArgs[] args);
-        void InvokeEntityCreatedDelegates(EntityCreatedEventArgs[] args);
+        void InvokeEntityCreatedDelegates(EntityCreatedEventArgs[]       args);
     }
 }

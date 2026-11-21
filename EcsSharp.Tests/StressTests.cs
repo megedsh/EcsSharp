@@ -5,10 +5,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+
 using EcsSharp.Helpers;
-using EcsSharp.Logging;
 using EcsSharp.Logging.BuiltIn;
 using EcsSharp.StructComponents;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests

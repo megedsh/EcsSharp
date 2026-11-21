@@ -29,7 +29,7 @@ public class RendererSystem
         m_gameTimer.Tick += render;
         m_gameTimer.Interval = TimeSpan.FromMilliseconds(20);
         m_gameTimer.Start();
-        m_ecsRepo.Events.ComponentDeleted[typeof(Rectangle)] += onDeleted;
+        m_ecsRepo.Events.ComponentDeletedWithEntity[typeof(Rectangle)] += onDeleted;
     }
 
     private void onDeleted(ComponentDeletedEventArgs obj)

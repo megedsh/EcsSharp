@@ -6,7 +6,6 @@ using System.Threading;
 using EcsSharp.Distribute;
 using EcsSharp.Events.EventArgs;
 using EcsSharp.Helpers;
-using EcsSharp.Logging;
 
 namespace EcsSharp.Storage;
 
@@ -29,13 +28,12 @@ public class EcsStorage : IEcsStorage
     public event Action<ComponentDeletedEventArgs[]> OnComponentDeleted;
     public event Action<EntityCreatedEventArgs[]> OnEntitiesCreated;
 
-    public ITypeFamilyProvider TypeFamilyProvider { get; init; } = new AllInterfacesFamilyProvider();
+    public IEcsRepo EcsRepo { get; set; }
 
     #region Create
 
-    public IEntity Create() => Create(Array.Empty<object>(), Array.Empty<string>());
-
-    public IEntity CreateWithComponents(params object[] components) => Create(components, Array.Empty<string>());
+    public IEntity Create()                                         => Create(Array.Empty<object>(), Array.Empty<string>());
+    public IEntity CreateWithComponents(params object[] components) => Create(components,            Array.Empty<string>());
 
     public IEntity Create(object[]            components,
                           IEnumerable<string> tags,
@@ -162,7 +160,7 @@ public class EcsStorage : IEcsStorage
         try
         {
             enterWriteLock();
-            EntityLookupBucket<TKey> bucket = new(ecsRepo, this, m_lock, addPredicate, keyFactory);
+            EntityLookupBucket<TKey> bucket = new EntityLookupBucket<TKey>(ecsRepo, this, m_lock, addPredicate, keyFactory);
             IEntityCollection allCurrentEntities = new EntityCollection(m_entityComponents.Keys.Select(createEntity));
             foreach (IEntity entity in allCurrentEntities)
             {
@@ -180,6 +178,8 @@ public class EcsStorage : IEcsStorage
             throw;
         }
     }
+
+    
 
     #endregion
 
@@ -257,7 +257,6 @@ public class EcsStorage : IEcsStorage
             exitWriteLock();
             return;
         }
-
         List<ComponentUpdatedEventArgs> updatedList = new();
         List<ComponentCreatedEventArgs> createdList = new();
 
@@ -278,13 +277,105 @@ public class EcsStorage : IEcsStorage
             exitWriteLock();
             return;
         }
-
         List<ComponentUpdatedEventArgs> updatedList = new();
         List<ComponentCreatedEventArgs> createdList = new();
         BatchEventsCollector ec = m_batchEventsCollector;
         setComponents(entity, components, updatedList, createdList);
         exitWriteLock();
         invokeIfNeeded(createdList.ToArray(), updatedList.ToArray(), ec);
+    }
+
+    public bool RemoveComponent<T>(IEntity entity)
+    {
+        return removeComponent(entity, typeof(T));
+    }
+
+    public bool RemoveComponent(IEntity entity, Type componentType)
+    {
+        return removeComponent(entity, componentType);
+    }
+
+    private bool removeComponent(IEntity entity, Type componentType)
+    {
+        List<ComponentDeletedEventArgs> deletedList = new();
+        bool result = false;
+        try
+        {
+            enterWriteLock();
+            if (!exists(entity.Id))
+            {
+                exitWriteLock();
+                return false;
+            }
+            BatchEventsCollector ec = m_batchEventsCollector;
+            result = deleteComponent(entity, componentType, deletedList);
+
+            exitWriteLock();
+            invokeIfNeeded(deletedList.ToArray(), ec);
+        }
+        catch (Exception e)
+        {
+            logAndReleaseLock(e);
+            throw;
+        }
+        return result;
+    }
+
+    private bool deleteComponent(IEntity entity, Type componentType, List<ComponentDeletedEventArgs> deletedList)
+    {
+        bool result = false;
+        
+        IEnumerable<Type> componentTypes = TypeFamilyProvider.GetTypeFamily(componentType);
+        ParentTypeMap parentTypeMap = m_entityComponents[entity.Id];
+
+        foreach (Type pt in componentTypes)
+        {
+            if (parentTypeMap.TryGetValue(pt, out TypeMap typeMap))
+            {
+                if (pt == componentType)
+                {
+                    ComponentDeletedEventArgs deletedEventArgs = new(entity,pt, typeMap[pt], false);
+                    typeMap.Remove(pt);
+                    parentTypeMap.Remove(pt);
+                    deletedList.Add(deletedEventArgs);
+                    result = true;
+                }
+                else
+                {
+                    typeMap.Remove(componentType);
+                }
+            }
+
+            if (typeMap == null || typeMap.Count == 0)
+            {
+                if (m_entitiesByType.TryGetValue(pt, out HashSet<string> entityIds))
+                {
+                    entityIds.Remove(entity.Id);
+                    ((IEntityInternal)entity).RemoveComponents(pt);
+                    if (entityIds.Count == 0)
+                    {
+                        m_entitiesByType.Remove(pt);
+                    }
+                }
+            }
+        }
+
+        foreach (ComponentDeletedEventArgs componentDeletedEventArg in deletedList)
+        {
+            Type type = componentDeletedEventArg.ComponentType;
+
+            //parentTypeMap.Remove(type);
+            // Remove from entities by type
+            if (m_entitiesByType.TryGetValue(type, out HashSet<string> entityIds))
+            {
+                entityIds.Remove(entity.Id);
+                if (entityIds.Count == 0)
+                {
+                    m_entitiesByType.Remove(type);
+                }
+            }
+        }
+        return result;
     }
 
     #endregion
@@ -299,7 +390,6 @@ public class EcsStorage : IEcsStorage
             exitWriteLock();
             return;
         }
-
         List<ComponentUpdatedEventArgs> updatedList = new(1);
         List<ComponentCreatedEventArgs> createdList = new(1);
 
@@ -347,7 +437,6 @@ public class EcsStorage : IEcsStorage
                 exitWriteLock();
                 return false;
             }
-
             BatchEventsCollector ec = m_batchEventsCollector;
             Component[] components = getComponents(entity, component.GetType());
             Component comp = firstOrThrow(components);
@@ -390,7 +479,6 @@ public class EcsStorage : IEcsStorage
                 exitWriteLock();
                 return false;
             }
-
             BatchEventsCollector ec = m_batchEventsCollector;
             Component[] components = getComponents(entity, typeof(T));
             Component comp = firstOrThrow(components);
@@ -431,7 +519,6 @@ public class EcsStorage : IEcsStorage
             exitWriteLock();
             return;
         }
-
         BatchEventsCollector ec = m_batchEventsCollector;
         addOrUpdateComponent(entity,
                              new Component(version, component),
@@ -456,7 +543,6 @@ public class EcsStorage : IEcsStorage
                 exitWriteLock();
                 return entity;
             }
-
             BatchEventsCollector ec = m_batchEventsCollector;
             Component[] components = getComponents(entity, typeof(T));
             Component comp = firstOrThrow(components);
@@ -501,7 +587,6 @@ public class EcsStorage : IEcsStorage
                 exitWriteLock();
                 return false;
             }
-
             BatchEventsCollector ec = m_batchEventsCollector;
             Component[] components = getComponents(entity, typeof(T));
             Component comp = firstOrThrow(components);
@@ -509,7 +594,8 @@ public class EcsStorage : IEcsStorage
 
             if (setWhenNotExist || currentComponent != null)
             {
-                T updatedComponent = componentFactory((T)currentComponent);
+                T forUpdate = currentComponent==null?default:(T)currentComponent;
+                T updatedComponent = componentFactory(forUpdate);
                 if (updatedComponent != null && !updatedComponent.Equals(currentComponent))
                 {
                     addOrUpdateComponent(entity, new Component(0, updatedComponent), false,
@@ -689,6 +775,7 @@ public class EcsStorage : IEcsStorage
             ComponentCreatedEventArgs[] componentCreatedEventArgs = m_batchEventsCollector.ComponentCreatedEventArgs;
             ComponentUpdatedEventArgs[] componentUpdatedEventArgs = m_batchEventsCollector.ComponentUpdatedEventArgs;
             ComponentDeletedEventArgs[] componentDeletedEventArgs = m_batchEventsCollector.ComponentDeletedEventArgs;
+            ComponentDeletedEventArgs[] partialComponentDeletedEventArgs = m_batchEventsCollector.PartialComponentDeletedEventArgs;
             m_batchEventsCollector = null;
             releaseAllLocks();
             if (createdArgs.Length > 0)
@@ -711,20 +798,41 @@ public class EcsStorage : IEcsStorage
         }
     }
 
-    public T BatchQuery<T>(EcsRepo repo, Func<IEcsRepo, T> queryFunc)
+    public void EntityBatchUpdate(IEntity entity, IEnumerable<Action<IEcsStorage>> batch)
     {
-        enterReadLock();
         try
         {
-            T res = queryFunc(repo);
+            enterWriteLock();
+            m_batchEventsCollector = new BatchEventsCollector();
+            foreach (Action<IEcsStorage> action in batch)
+            {
+                action?.Invoke(this);
+            }
+            EntityCreatedEventArgs[] createdArgs = m_batchEventsCollector.EntityCreatedEventsArgs;
+            ComponentCreatedEventArgs[] componentCreatedEventArgs = m_batchEventsCollector.ComponentCreatedEventArgs;
+            ComponentUpdatedEventArgs[] componentUpdatedEventArgs = m_batchEventsCollector.ComponentUpdatedEventArgs;
+            ComponentDeletedEventArgs[] componentDeletedEventArgs = m_batchEventsCollector.ComponentDeletedEventArgs;
+            ComponentDeletedEventArgs[] partialComponentDeletedEventArgs = m_batchEventsCollector.PartialComponentDeletedEventArgs;
+            m_batchEventsCollector = null;
             releaseAllLocks();
-            return res;
+            if (createdArgs.Length > 0)
+            {
+                EntityCreatedEventArgs[] mergedCreatedArgs = mergeIfNeeded(createdArgs, componentCreatedEventArgs);
+                invokeIfNeeded(mergedCreatedArgs, null);
+            }
+            else
+            {
+                invokeIfNeeded(createdArgs, null);
+            }
+
+            invokeIfNeeded(componentCreatedEventArgs, componentUpdatedEventArgs, null);
+            invokeIfNeeded(componentDeletedEventArgs, null);
         }
         catch (Exception e)
         {
             logAndReleaseLock(e);
-            return default;
-        }        
+            throw;
+        }
     }
 
     private EntityCreatedEventArgs[] mergeIfNeeded(EntityCreatedEventArgs[]    createdArgs,
@@ -770,7 +878,7 @@ public class EcsStorage : IEcsStorage
         try
         {
             IEnumerable<IEntity> result = query(componentTypes, entityPredicate, tags);
-            EntityCollection res = new(result);
+            EntityCollection res = new EntityCollection(result);
             exitReadLock();
             return res;
         }
@@ -784,7 +892,7 @@ public class EcsStorage : IEcsStorage
     public IEntityCollection QueryAll()
     {
         enterReadLock();
-        IEntityCollection entityCollection = new EntityCollection(m_entityComponents.Keys.Select(createEntity));
+        IEntityCollection entityCollection = new EntityCollection(m_entityComponents.Keys.Select(createEntityWithAllComponents));
         exitReadLock();
         return entityCollection;
     }
@@ -846,17 +954,15 @@ public class EcsStorage : IEcsStorage
 
         IEntity res = null;
         enterReadLock();
-        if (exists(id))
+        if (m_entityComponents.ContainsKey(id))
         {
-            res = createEntity(id);
+            res = createEntityWithAllComponents(id);
         }
 
         exitReadLock();
 
         return res;
     }
-
-    private bool exists(string id) => m_entityComponents.ContainsKey(id);
 
     public IEntity QuerySingle<T>(string[] tags = null)
     {
@@ -873,7 +979,7 @@ public class EcsStorage : IEcsStorage
                     return firstOrThrow(filtered, type);
                 }
 
-                return firstOrThrow(entityIds, type);
+                return firstOrThrow(entityIds,type);
             }
         }
         catch (Exception e)
@@ -948,7 +1054,7 @@ public class EcsStorage : IEcsStorage
         {
             if (m_entityComponents.ContainsKey(entity.Id))
             {
-                result.Add(createEntity(entity.Id));
+                result.Add(createEntityWithAllComponents(entity.Id));
             }
         }
 
@@ -971,7 +1077,7 @@ public class EcsStorage : IEcsStorage
                 e = e.Where(id => entitiesForTags.Contains(id));
             }
 
-            IEnumerable<IEntity> enumerable = e.Select(id => createEntityAndAddType(id, componentType));
+            IEnumerable<IEntity> enumerable = e.Select((id) => createEntityAndAddType(id, componentType));
             res = new EntityCollection(enumerable);
             exitReadLock();
         }
@@ -1003,7 +1109,7 @@ public class EcsStorage : IEcsStorage
 
             if (m_entityComponents.ContainsKey(id))
             {
-                entities.Add(createEntity(id));
+                entities.Add(createEntityWithAllComponents(id));
             }
         }
 
@@ -1057,12 +1163,11 @@ public class EcsStorage : IEcsStorage
             {
                 if (entities.Count > 0)
                 {
-                    result = createEntity(entities.First());
+                    result =  createEntityWithAllComponents(entities.First());
                     break;
                 }
             }
         }
-
         exitReadLock();
         return result;
     }
@@ -1135,22 +1240,16 @@ public class EcsStorage : IEcsStorage
     private IEntity createEntity(string entityId)
     {
         m_tagsForEntity.TryGetValue(entityId, out HashSet<string> tags);
-        return new Entity(this, entityId, tags);
+        return new Entity(EcsRepo, entityId, tags);
     }
 
+    
     private IEntity createEntityWithAllComponents(string entityId)
     {
         m_tagsForEntity.TryGetValue(entityId, out HashSet<string> tags);
-        IEntity entity = new Entity(this, entityId, tags);
-        entity = setComponentCache(entity);
+        Entity entity = new(EcsRepo, entityId, tags);
+        entity.RefreshAllComponents();
         return entity;
-    }
-
-    private IEntity setComponentCache(IEntity entity)
-    {
-        Component[] allComponents = getAllComponents(entity.Id);
-        ((IEntityInternal) entity).SetComponentsInEntityCache(allComponents);
-        return entity; 
     }
 
     private IEnumerable<IEntity> query(Type[] componentType, Predicate<IEntity> entityPredicate = null, string[] tags = null)
@@ -1174,13 +1273,13 @@ public class EcsStorage : IEcsStorage
                .Distinct()
                .Select(id => getByEntityPredicate(id, entityPredicate))
                .Where(e => e != null)
-               .Select(setComponentCache);
-        
+               .Select((e) => addComponentsToEntity(e, componentType));
+
     }
 
     private IEntity addComponentsToEntity(IEntity entity, Type[] componentTypes)
     {
-        if (componentTypes != null)
+        if (componentTypes!=null)
         {
             foreach (Type componentType in componentTypes)
             {
@@ -1212,8 +1311,7 @@ public class EcsStorage : IEcsStorage
         return stream
                .Select(id => getByComponentAndEntityPredicate(id, type, entityPredicate))
                .Where(e => e != null)
-               .Select(setComponentCache)
-                           .ToArray();
+               .ToArray();
     }
 
     private ICollection<IEntity> query<T>(Func<T, IEntity, bool> entityPredicate, string[] tags = null)
@@ -1237,7 +1335,6 @@ public class EcsStorage : IEcsStorage
         return stream
                .Select(id => getByComponentAndEntityPredicate(id, entityPredicate))
                .Where(e => e != null)
-               .Select(setComponentCache)
                .ToArray();
     }
 
@@ -1263,7 +1360,6 @@ public class EcsStorage : IEcsStorage
         return stream
                .Select(id => getByComponentPredicate(id, type, componentPredicate))
                .Where(e => e != null)
-               .Select(setComponentCache)
                .ToArray();
     }
 
@@ -1279,7 +1375,7 @@ public class EcsStorage : IEcsStorage
             }
 
             IEntity entity = createEntity(id);
-            ((IEntityInternal)entity).SetComponentsInEntityCache(components);
+            ((IEntityInternal)entity).SetComponents(components);
             return entity;
         }
 
@@ -1310,7 +1406,7 @@ public class EcsStorage : IEcsStorage
             }
 
             IEntity entity = createEntity(id);
-            ((IEntityInternal)entity).SetComponentsInEntityCache(components);
+            ((IEntityInternal)entity).SetComponents(components);
             if (entityPredicate((T)component.Data, entity))
             {
                 return entity;
@@ -1332,7 +1428,7 @@ public class EcsStorage : IEcsStorage
             }
 
             IEntity entity = createEntity(id);
-            ((IEntityInternal)entity).SetComponentsInEntityCache(components);
+            ((IEntityInternal)entity).SetComponents(components);
             if (entityPredicate(component.Data, entity))
             {
                 return entity;
@@ -1347,9 +1443,8 @@ public class EcsStorage : IEcsStorage
         Component[] components = getComponentsById(entity.Id, componentType);
         if (components.Length > 0)
         {
-            ((IEntityInternal)entity).SetComponentsInEntityCache(components);
+            ((IEntityInternal)entity).SetComponents(components);
         }
-
         return components;
     }
 
@@ -1392,7 +1487,7 @@ public class EcsStorage : IEcsStorage
                                         List<ComponentCreatedEventArgs> createdList,
                                         string                          id = null, string[] tags = null)
     {
-        IEntity entity = new Entity(this, id, tags);
+        IEntity entity = new Entity(EcsRepo, id, tags);
         m_entityComponents[entity.Id] = new ParentTypeMap();
         if (tags != null)
         {
@@ -1431,7 +1526,7 @@ public class EcsStorage : IEcsStorage
                 existingTags = new HashSet<string>();
             }
 
-            entity = new Entity(this, id, existingTags);
+            entity = new Entity(EcsRepo, id, existingTags);
 
             if (tags != null && existingTags.Count != tags.Length)
             {
@@ -1490,7 +1585,7 @@ public class EcsStorage : IEcsStorage
     {
         foreach (object component in components)
         {
-            Component component1 = new(0, component);
+            Component component1 = new Component(0, component);
             addOrUpdateComponent(entity, component1, false,
                                  updatedList,
                                  createdList);
@@ -1583,15 +1678,15 @@ public class EcsStorage : IEcsStorage
             m_tagsForEntity.TryGetValue(entityId, out HashSet<string> tags);
             if (!componentExists)
             {
-                createdList.Add(new ComponentCreatedEventArgs(new Entity(this, entityId, tags),
+                createdList.Add(new ComponentCreatedEventArgs(new Entity(EcsRepo, entityId, tags),
                                                               componentType, component));
             }
 
-            updatedList.Add(new ComponentUpdatedEventArgs(new Entity(this, entityId, tags),
+            updatedList.Add(new ComponentUpdatedEventArgs(new Entity(EcsRepo, entityId, tags),
                                                           componentType, component, oldComponent));
         }
 
-        ((IEntityInternal)entity).SetComponentsInEntityCache(component);
+        ((IEntityInternal)entity).SetComponents(component);
     }
 
     private static bool setVersion(string entityId, ref Component component, Component existingComponent, Type type)
@@ -1654,9 +1749,10 @@ public class EcsStorage : IEcsStorage
             {
                 if (finalTypesPair.Key == componentType)
                 {
-                    ComponentDeletedEventArgs args = new(new Entity(this, id, tags),
+                    ComponentDeletedEventArgs args = new(new Entity(EcsRepo, id, tags),
                                                          componentType,
-                                                         finalTypesPair.Value);
+                                                         finalTypesPair.Value,
+                                                         true);
                     argsList.Add(args);
                 }
             }
@@ -1744,6 +1840,7 @@ public class EcsStorage : IEcsStorage
         }
     }
 
+
     private void invokeIfNeeded(ComponentCreatedEventArgs[] createdArgs, ComponentUpdatedEventArgs[] updatedArgs, BatchEventsCollector collector)
     {
         if (collector != null)
@@ -1763,13 +1860,6 @@ public class EcsStorage : IEcsStorage
             OnComponentUpdated?.Invoke(updatedArgs);
         }
     }
-
-    //private void invokeIfNeeded(ComponentUpdatedEventArgs updatedArgs, ComponentCreatedEventArgs createdArgs, BatchEventsCollector collector)
-    //{
-    //    ComponentUpdatedEventArgs[] updated = updatedArgs == null ? Array.Empty<ComponentUpdatedEventArgs>() : new[] { updatedArgs };
-    //    ComponentCreatedEventArgs[] created = createdArgs == null ? Array.Empty<ComponentCreatedEventArgs>() : new[] { createdArgs };
-    //    invokeIfNeeded(created, updated, collector);
-    //}
 
     private void addEntityToEntitiesByTag(string entityId, IEnumerable<string> tag)
     {
@@ -1831,5 +1921,18 @@ public class EcsStorage : IEcsStorage
         }
     }
 
+    private bool exists(string id)
+    {
+        return m_entityComponents.ContainsKey(id);
+    }
+
     #endregion
+
+    public void SetRepo(IEcsRepo repo)
+    {
+        EcsRepo = repo;
+
+    }
+
+    
 }

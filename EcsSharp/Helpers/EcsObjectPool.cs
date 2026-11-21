@@ -2,14 +2,13 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
-using EcsSharp.Logging;
 
 namespace EcsSharp.Helpers
 {
     
         public interface IEcsObjectPool
         {
-            void Register<T>(Func<EcsObjectPool, T> factory, string releaseMethodName);
+            void Register<T>(Func<EcsObjectPool, T> factory, Action<T> releaseDelegate);
             T    GetObject<T>();
             void Release<T>(T obj);
         }
@@ -27,19 +26,21 @@ namespace EcsSharp.Helpers
 
             internal void Register<T>(Func<EcsObjectPool, T> factory)
             {
-                Register<T>(factory, null);
+                Register<T>(factory, _ => { });
             }
 
-            public void Register<T>(Func<EcsObjectPool, T> factory, string releaseMethodName)
+            public void Register<T>(Func<EcsObjectPool, T> factory, Action<T> releaseDelegate)
             {
                 Type type = typeof(T);
-                if (!string.IsNullOrEmpty(releaseMethodName))
+                if (factory == null)
                 {
-                    MethodInfo methodInfo = type.GetMethod(releaseMethodName);
-                    Action<object> releaseMethod = o => methodInfo.Invoke(o, Array.Empty<object>());
-                    m_releaseMethodsMap[type] = releaseMethod;
+                    throw new NullReferenceException("Factory cannot be null");
                 }
-
+                if (releaseDelegate == null)
+                {
+                    throw new NullReferenceException("Release delegate cannot be null");
+                }
+                m_releaseMethodsMap[type] = o => releaseDelegate((T)o);
                 m_factoryMap[type] = () => factory.Invoke(this);
                 m_objectPool[type] = new ConcurrentBag<object>();
                 m_objectCounters[type] = 0;

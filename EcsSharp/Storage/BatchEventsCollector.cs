@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+
 using EcsSharp.Events.EventArgs;
 
 namespace EcsSharp.Storage
@@ -9,10 +10,12 @@ namespace EcsSharp.Storage
         private readonly List<ComponentDeletedEventArgs> m_componentDeletedList = new List<ComponentDeletedEventArgs>();
         private readonly List<ComponentCreatedEventArgs> m_componentCreatedList = new List<ComponentCreatedEventArgs>();
         private readonly List<ComponentUpdatedEventArgs> m_componentUpdatedList = new List<ComponentUpdatedEventArgs>();
+        private readonly List<ComponentDeletedEventArgs> m_partialComponentDeletedList = new List<ComponentDeletedEventArgs>();
         public EntityCreatedEventArgs[] EntityCreatedEventsArgs => m_entityCreatedList.ToArray();
         public ComponentCreatedEventArgs[] ComponentCreatedEventArgs => m_componentCreatedList.ToArray();
         public ComponentUpdatedEventArgs[] ComponentUpdatedEventArgs => m_componentUpdatedList.ToArray();
         public ComponentDeletedEventArgs[] ComponentDeletedEventArgs  => m_componentDeletedList.ToArray();
+        public ComponentDeletedEventArgs[] PartialComponentDeletedEventArgs  => m_partialComponentDeletedList.ToArray();
 
         public void Add(EntityCreatedEventArgs[] entityCreatedArgs)
         {
@@ -32,6 +35,11 @@ namespace EcsSharp.Storage
         public void Add(ComponentUpdatedEventArgs[] componentUpdatedArgs)
         {
             m_componentUpdatedList.AddRange(componentUpdatedArgs);
+        }
+
+        public void AddPartialDeleted(ComponentDeletedEventArgs[] deletedArgs)
+        {
+            m_partialComponentDeletedList.AddRange(deletedArgs);
         }
     }
 }

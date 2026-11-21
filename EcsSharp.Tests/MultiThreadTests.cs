@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+
 using EcsSharp.Helpers;
-using EcsSharp.Logging;
 using EcsSharp.Logging.BuiltIn;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests

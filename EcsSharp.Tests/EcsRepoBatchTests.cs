@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+
 using EcsSharp.Events.EventArgs;
+
 using log4net.Config;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests

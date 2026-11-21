@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using EcsSharp.Distribute;
 using EcsSharp.Events.EventArgs;
-using EcsSharp.Logging;
 using EcsSharp.Logging.BuiltIn;
 using EcsSharp.Storage;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests;
@@ -29,7 +30,7 @@ public class DistributionTests
         int deletedCount = 0;
 
         repo2.Events.ComponentUpdated[typeof(ICar)] += _ => updatCount++;
-        repo2.Events.ComponentDeleted[typeof(Location)] += _ => deletedCount++;
+        repo2.Events.ComponentDeletedWithEntity[typeof(Location)] += _ => deletedCount++;
 
         IEntity entity1 = repo1.CreateWithComponents(new Sedan("a"), new Suv("a"), new Location(1, 1, 1));
         entity1.AddTag("foo");
@@ -39,7 +40,7 @@ public class DistributionTests
         EcsPackage pack1 = new EcsPackage().AddAllComponents(entity1, entity2);
 
         repo2.MergePackage(pack1);
-        Assert.That(() => updatCount, Is.EqualTo(4).After(2000, 100));
+        Assert.That(() => updatCount, Is.EqualTo(4).After(500, 100));
         IEntity e1 = repo2.QuerySingle(entity1.Id);
         IEntity e2 = repo2.QuerySingle(entity2.Id);
         assertEntity(entity1, e1);
@@ -80,7 +81,7 @@ public class DistributionTests
         int deletedCount = 0;
 
         repo2.Events.ComponentUpdated[typeof(ICar)] += _ => updatCount++;
-        repo2.Events.ComponentDeleted[typeof(Location)] += _ => deletedCount++;
+        repo2.Events.ComponentDeletedWithEntity[typeof(Location)] += _ => deletedCount++;
 
         repo2.MergePackage(pack1);
         Assert.That(() => updatCount, Is.EqualTo(6).After(500, 100));
@@ -124,9 +125,9 @@ public class DistributionTests
         repo2.MergePackage(pack1);
         repo2.MergePackage(pack1);
 
-        Assert.That(() => updatCount, Is.EqualTo(12).After(2500, 100));
-        Assert.That(() => createdCount, Is.EqualTo(6).After(2500, 100));
-        Assert.That(() => entityCreated, Is.EqualTo(3).After(2500, 100));
+        Assert.That(() => updatCount, Is.EqualTo(12).After(500, 100));
+        Assert.That(() => createdCount, Is.EqualTo(6).After(500, 100));
+        Assert.That(() => entityCreated, Is.EqualTo(3).After(500, 100));
     }
 
     [Test]
@@ -185,7 +186,7 @@ public class DistributionTests
         repo2.MergePackage(pack1);
         repo2.MergePackage(pack1);
 
-        Assert.That(() => updateCount, Is.EqualTo(8).After(2500, 100));
+        Assert.That(() => updateCount, Is.EqualTo(8).After(500, 100));
         IEntity e1 = repo2.QuerySingle(entity1.Id);
         Component sedan2 = e1.GetAllComponents().FirstOrDefault(c => c.Data.GetType() == typeof(Sedan));
         Assert.AreEqual(sedan1.Id, ((Sedan)sedan2.Data).Id);

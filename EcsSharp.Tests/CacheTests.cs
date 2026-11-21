@@ -1,6 +1,8 @@
 ﻿using System;
+
 using EcsSharp.Logging;
 using EcsSharp.Logging.BuiltIn;
+
 using NUnit.Framework;
 
 namespace EcsSharp.Tests

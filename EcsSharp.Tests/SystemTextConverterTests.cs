@@ -6,6 +6,7 @@ using System.Text.Json;
 using EcsSharp.Distribute;
 using EcsSharp.Extensions.Json;
 using EcsSharp.Storage;
+using EcsSharp.StructComponents;
 
 using NUnit.Framework;
 
@@ -13,14 +14,16 @@ namespace EcsSharp.Tests
 {
     public class SystemTextConverterTests
     {
+
         private readonly IEcsRepoFactory m_factory = new DefaultEcsRepoFactory();
 
         private readonly EcsPackageConverter m_subject = new EcsPackageConverter();
+        private readonly StructComponentJsonConverter structComponentJsonConverter = new StructComponentJsonConverter();
 
         [Test]
         public void DeserializationTest()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new ();
             options.Converters.Add(m_subject);
             IEcsRepo repo = getNewRepo();
             IEntity entity = repo.CreateWithComponents(new Sedan("aa"), new Location(1, 2, 3), new Suv("cc"));
@@ -37,13 +40,9 @@ namespace EcsSharp.Tests
             string json = JsonSerializer.Serialize(p, options);
             EcsPackage? deserializeObject = JsonSerializer.Deserialize<EcsPackage>(json, options);
 
-            if (deserializeObject == null)
-            {
-                Assert.Fail();
-                return;
-            }            
+            Assert.IsNotNull(deserializeObject);
 
-            assertEntityUpdated(entity,  deserializeObject);
+            assertEntityUpdated(entity, deserializeObject);
             assertEntityUpdated(entity1, deserializeObject);
             assertEntityDeleted(entity2, deserializeObject);
         }
@@ -51,7 +50,7 @@ namespace EcsSharp.Tests
         [Test]
         public void DeserializationBigVersionTest()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new ();
             options.Converters.Add(m_subject);
             IEcsRepo repo = getNewRepo();
             IEntity entity = repo.Create();
@@ -59,15 +58,37 @@ namespace EcsSharp.Tests
             EcsPackage p = new EcsPackage();
             p.AddComponent(entity, new Component(ulong.MaxValue, new Location(1, 1, 1)));
 
+
             string json = JsonSerializer.Serialize(p, options);
             EcsPackage? deserializeObject = JsonSerializer.Deserialize<EcsPackage>(json, options);
 
-            if (deserializeObject == null)
-            {
-                Assert.Fail();
-                return;
-            }
-            Assert.IsTrue(deserializeObject.Updated.Values.SelectMany(map => map.Values).Any(c => c.Version.Equals(ulong.MaxValue)));
+            Assert.IsNotNull(deserializeObject);
+            Assert.IsTrue( deserializeObject.Updated.Values.SelectMany(p => p.Values).Any(c => c.Version.Equals(ulong.MaxValue)));
+        }
+
+        [Test]
+        public void StructComponentTest()
+        {
+            JsonSerializerOptions options = new ();
+            options.Converters.Add(m_subject);
+            options.Converters.Add(structComponentJsonConverter);
+
+            IEcsRepo repo = getNewRepo();
+            CreateTime createTime = new CreateTime(){Data = DateTime.UtcNow};
+            ModifiedTime modifiedTime = new ModifiedTime() { Data = DateTime.Now };
+            NameComponent name = "foo";
+
+
+            IEntity entity = repo.EntityBuilder().WithComponents(name, modifiedTime, createTime).Build();
+            
+            EcsPackage p = new EcsPackage();
+            p.AddAllComponents(entity);
+
+            string json = JsonSerializer.Serialize(p, options);
+            EcsPackage? deserializeObject = JsonSerializer.Deserialize<EcsPackage>(json, options);
+
+            Assert.IsNotNull(deserializeObject);
+            assertEntityUpdated(entity, deserializeObject);
         }
 
         private void assertEntityDeleted(IEntity entity, EcsPackage deserializeObject)
@@ -80,20 +101,10 @@ namespace EcsSharp.Tests
             Dictionary<string, Component>? components = deserializeObject.Updated.Where(p => p.Key.Equals(entity.Id))
                                                                          .Select(p => p.Value)
                                                                          .FirstOrDefault();
-            if (components == null)
+            Assert.IsNotNull(components);
+            foreach (Component c in entity.GetAllComponents().Where(c=>c.Data is not EntityTags))
             {
-                Assert.Fail();
-                return;
-            }
-            foreach (Component c in entity.GetAllComponents().Where(c => c.Data is not EntityTags))
-            {
-                string? fullName = c.Data.GetType().FullName;
-                if (fullName == null)
-                {
-                    Assert.Fail($"Component {c.Data} has no full name.");
-                    return;
-                }
-                Component component = components[fullName];
+                Component component = components[c.Data.GetType().FullName];
                 if (c.Data is ICar car)
                 {
                     Assert.AreEqual(car.Id, ((ICar)component.Data).Id);
@@ -103,10 +114,16 @@ namespace EcsSharp.Tests
                 {
                     Assert.AreEqual(location, (Location)component.Data);
                 }
+
+                if(c.Data is IStructComponent structComponent)
+                {
+                    Assert.AreEqual(structComponent.UntypedData, ((IStructComponent)component.Data).UntypedData);
+                }
             }
 
-            string[] actualTags = deserializeObject.EntityTags.GetValueOrDefault(entity.Id) ?? Array.Empty<string>();
-            CollectionAssert.AreEquivalent(entity.Tags, actualTags);
+            string[] actualTags = deserializeObject.EntityTags.GetValueOrDefault(entity.Id)??Array.Empty<string>();
+            CollectionAssert.AreEquivalent(entity.Tags,actualTags);
+
         }
 
         private IEcsRepo getNewRepo()
@@ -114,5 +131,16 @@ namespace EcsSharp.Tests
             IEcsRepo ecsRepo = m_factory.Create();
             return ecsRepo;
         }
+    }
+
+    
+
+    public class NameComponent : StringComponent<NameComponent>
+    {
+        public static implicit operator NameComponent(string d) =>
+            new NameComponent
+            {
+                Data = d
+            };
     }
 }

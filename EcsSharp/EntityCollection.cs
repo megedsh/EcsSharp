@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace EcsSharp
 {
@@ -23,16 +22,6 @@ namespace EcsSharp
         {
             get => m_entities[index];
             set => m_entities[index] = value;
-        }
-
-        public IEntityCollection Clone()
-        {            
-            return new EntityCollection(m_entities.Select(e => e.Clone()));
-        }
-
-        public override string ToString()
-        {
-            return $"{nameof(Count)}: {Count}";
         }
     }
 }

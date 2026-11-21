@@ -2,12 +2,12 @@
 {
     public interface IStructComponent
     {
-        object UntypedData { get; }
+        object UntypedData { get;}
     }
 
     public interface IStructComponent<T> : IStructComponent
     {
-        public T Data { get; init; }
+        T Data { get; init; }
     }
 
     public abstract class StructComponent<T> : IStructComponent<T>
@@ -46,7 +46,6 @@
 
         public override int GetHashCode() => Data.GetHashCode();
 
-        public override string ToString() => Data.ToString();
-        
+        public override string ToString() => $"{Data}";
     }
 }

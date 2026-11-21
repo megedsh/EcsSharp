@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+
 using EcsSharp.Events.ComponentEvents;
 using EcsSharp.Events.EntityEvents;
 using EcsSharp.Events.EventArgs;
 using EcsSharp.Events.TagEvents;
 using EcsSharp.Helpers;
-using EcsSharp.Logging;
 
 namespace EcsSharp.Events;
 
@@ -21,17 +21,20 @@ public class EcsEventService : IEcsEventService
 
     public ComponentCreatedEvents ComponentCreated { get; } = new();
     public ComponentUpdatedEvents ComponentUpdated { get; } = new();
-    public ComponentDeletedEvents ComponentDeleted { get; } = new();
+    public ComponentDeletedWithEntityEvents ComponentDeletedWithEntity { get;  } = new();
+    public ComponentRemovedFromEntityEvents ComponentRemovedFromEntity { get;  } = new();
+    
     public GlobalCreatedEvent GlobalCreated { get; set; } = new();
     public GlobalUpdatedEvent GlobalUpdated { get; set; } = new();
     public GlobalDeletedEvent GlobalDeleted { get; set; } = new();
+    public ComponentsRemovedFromEntitiesEvent GlobalComponentsRemovedFromEntity { get; set; } = new();
+    
     public TagCreatedEvents TaggedEntitiesCreated { get; set; } = new();
     public TagUpdatedEvents TaggedEntitiesUpdated { get; set; } = new();
     public TagDeletedEvents TaggedEntitiesDeleted { get; set; } = new();
     public SpecificCreatedEvent SpecificCreated { get; set; } = new();
     public SpecificUpdatedEvent SpecificUpdated { get; set; } = new();
     public SpecificDeletedEvent SpecificDeleted { get; set; } = new();
-    public ITypeFamilyProvider TypeFamilyProvider{get; set; } = new AllInterfacesFamilyProvider();
 
     public void InvokeEntityCreatedDelegates(EntityCreatedEventArgs[] args)
     {
@@ -78,7 +81,7 @@ public class EcsEventService : IEcsEventService
         foreach (ComponentUpdatedEventArgs arg in args)
         {
             s_log.TraceFormat("Entity : {0}, {1} Component Updated : {2} , Version: {3}", arg.Entity.Id,
-                              arg.ComponentType.Name, 
+                              arg.ComponentType.Name,
                               arg.Component.Data,
                               arg.Component.Version);
 
@@ -139,32 +142,62 @@ public class EcsEventService : IEcsEventService
     public void InvokeComponentDeletedDelegates(ComponentDeletedEventArgs[] args)
     {
         IEnumerable<EventArgsAndDelegatePair> stream = Enumerable.Empty<EventArgsAndDelegatePair>();
+
+        List<ComponentDeletedEventArgs> entityDeletedArgs = new(args.Length);
+        List<ComponentDeletedEventArgs> componentOnlyDeletedArgs = new(args.Length);
+
+
         foreach (ComponentDeletedEventArgs arg in args)
         {
             s_log.DebugFormat("Entity : {0}, {1} Component Deleted : {2}", arg.Entity.Id, arg.ComponentType.Name, arg.Component.Data);
             IEnumerable<Type> typeFamily = TypeFamilyProvider.GetTypeFamily(arg.ComponentType);
-            IEnumerable<DelegateWrapper> delegatesForType = ComponentDeleted.GetDelegatesForType(typeFamily);
-            EventArgsAndDelegatePair pair = new(arg, delegatesForType);
-            stream = stream.Concat(pair.Yield());
+
+            if (arg.EntityDeleted)
+            {
+                IEnumerable<DelegateWrapper> delegatesForType = ComponentDeletedWithEntity.GetDelegatesForType(typeFamily);
+                EventArgsAndDelegatePair pair = new(arg, delegatesForType);
+                stream = stream.Concat(pair.Yield());
+                entityDeletedArgs.Add(arg);
+            }
+            else
+            {
+                IEnumerable<DelegateWrapper> delegatesForType = ComponentRemovedFromEntity.GetDelegatesForType(typeFamily);
+                EventArgsAndDelegatePair pair = new(arg, delegatesForType);
+                stream = stream.Concat(pair.Yield());
+                componentOnlyDeletedArgs.Add(arg);
+            }
         }
 
-        if (GlobalDeleted.HasDelegates || TaggedEntitiesDeleted.HasDelegates || SpecificDeleted.HasDelegates)
+        if (componentOnlyDeletedArgs.Count>0)
         {
-            EntitiesDeletedEventArgs grouped = groupByEntities(args);
-            if (GlobalDeleted.HasDelegates)
+            if (GlobalComponentsRemovedFromEntity.HasDelegates)
             {
-                EventArgsAndDelegatePair pair = new(grouped, new DelegateWrapper[] { GlobalDeleted });
+                ComponentsRemovedFromEntitiesEventArgs grouped = groupByEntitiesPartial(componentOnlyDeletedArgs);
+
+                EventArgsAndDelegatePair pair = new(grouped, new DelegateWrapper[] { GlobalComponentsRemovedFromEntity });
                 stream = stream.Concat(pair.Yield());
             }
-
-            if (TaggedEntitiesDeleted.HasDelegates)
+        }
+        if(entityDeletedArgs.Count>0)
+        {
+            if (GlobalDeleted.HasDelegates || TaggedEntitiesDeleted.HasDelegates || SpecificDeleted.HasDelegates)
             {
-                stream = stream.Concat(getTaggedDeletedDelegates(grouped));
-            }
+                EntitiesDeletedEventArgs grouped = groupByEntities(entityDeletedArgs);
+                if (GlobalDeleted.HasDelegates)
+                {
+                    EventArgsAndDelegatePair pair = new(grouped, new DelegateWrapper[] { GlobalDeleted });
+                    stream = stream.Concat(pair.Yield());
+                }
 
-            if (SpecificDeleted.HasDelegates)
-            {
-                stream = stream.Concat(getSpecificDeletedDelegates(grouped));
+                if (TaggedEntitiesDeleted.HasDelegates)
+                {
+                    stream = stream.Concat(getTaggedDeletedDelegates(grouped));
+                }
+
+                if (SpecificDeleted.HasDelegates)
+                {
+                    stream = stream.Concat(getSpecificDeletedDelegates(grouped));
+                }
             }
         }
 
@@ -184,13 +217,22 @@ public class EcsEventService : IEcsEventService
         return new EntitiesUpdatedEventArgs(entityUpdatedArgs);
     }
 
-    private static EntitiesDeletedEventArgs groupByEntities(ComponentDeletedEventArgs[] args)
+    private static EntitiesDeletedEventArgs groupByEntities(IEnumerable<ComponentDeletedEventArgs> args)
     {
         EntityDeletedEventArgs[] entityUpdatedArgs = args
                                                      .GroupBy(e => e.Entity)
                                                      .Select(p => new EntityDeletedEventArgs(p.Key, p.ToArray()))
                                                      .ToArray();
         return new EntitiesDeletedEventArgs(entityUpdatedArgs);
+    }
+
+    private static ComponentsRemovedFromEntitiesEventArgs groupByEntitiesPartial(IEnumerable<ComponentDeletedEventArgs> args)
+    {
+        ComponentRemovedFromEntityEventArgs[] entityUpdatedArgs = args
+                                                            .GroupBy(e => e.Entity)
+                                                            .Select(p => new ComponentRemovedFromEntityEventArgs(p.Key, p.ToArray()))
+                                                            .ToArray();
+        return new ComponentsRemovedFromEntitiesEventArgs(entityUpdatedArgs);
     }
 
     private ICollection<EventArgsAndDelegatePair> getTaggedUpdatedDelegates(EntitiesUpdatedEventArgs grouped)

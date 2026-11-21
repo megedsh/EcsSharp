@@ -1,15 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
+
+using EcsSharp.Helpers;
+using EcsSharp.Storage;
 
 namespace EcsSharp;
 
 public interface IEntity
 {
+    IEcsStorage EcsStorage { get; }
+    IEcsRepo EcsRepo { get; }
     string Id { get; }
     string[] Tags { get; }
+
+    IEntityBatchUpdateBuilder BatchUpdateBuilder();
+
     T           GetComponent<T>();
     T[]         GetComponents<T>();
-    Component   GetComponent(Type  componentType);
+    Component   GetComponent(Type componentType);
     Component[] GetComponents(Type componentType);
     Component[] GetAllComponents();
     T           RefreshComponent<T>();
@@ -38,35 +45,38 @@ public interface IEntity
     /// <param name="setWhenNotExist"></param>
     /// <returns>returns 'true' if component was updated</returns>
     bool ConditionalSet<T>(Predicate<T> condition, Func<T, T> componentFactory, bool setWhenNotExist = true);
-
     /// <summary>
+    /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="component"></param>
     /// <returns>returns 'true' if component was updated</returns>
-    bool SetWhenNotEqual<T>(T component);
-
+    bool    SetWhenNotEqual<T>(T component);
     /// <summary>
+    /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="componentFactory"></param>
     /// <param name="setWhenNotExist"></param>
     /// <returns>returns 'true' if component was updated</returns>
-    bool SetWhenNotEqual<T>(Func<T, T> componentFactory, bool setWhenNotExist = true);
-
+    bool    SetWhenNotEqual<T>(Func<T, T> componentFactory, bool setWhenNotExist = true);
     IEntity UpdateComponent<T>(Func<T, T> componentFactory, bool setWhenNotExist = true);
     bool    HasComponent<T>();
     bool    HasComponent(Type type);
+    bool    Exists();
 
-    IEntity AddTag(params    string[] tag);
-    bool    HasTag(params    string[] tag);
-    bool    HasAnyTag(params string[] tag);
+    IEntity AddTag(params string[] tag);
+    bool    HasTag(params string[] tag);
+
+    public bool RemoveComponent<T>();
+    public bool RemoveComponent(Type componentType);
 
     Component[] CachedComponents { get; }
-    bool    Exists();
-    IEntity Clone();
+    
 }
+
 internal interface IEntityInternal
 {
-    void SetComponentsInEntityCache(params IEnumerable<Component> components);
+    void SetComponents(params    Component[] components);
+    void RemoveComponents(params Type[] types);
 }
