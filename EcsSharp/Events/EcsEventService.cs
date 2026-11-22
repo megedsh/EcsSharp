@@ -35,6 +35,7 @@ public class EcsEventService : IEcsEventService
     public SpecificCreatedEvent SpecificCreated { get; set; } = new();
     public SpecificUpdatedEvent SpecificUpdated { get; set; } = new();
     public SpecificDeletedEvent SpecificDeleted { get; set; } = new();
+    public ITypeFamilyProvider TypeFamilyProvider { get; set; } = new AllInterfacesFamilyProvider();
 
     public void InvokeEntityCreatedDelegates(EntityCreatedEventArgs[] args)
     {

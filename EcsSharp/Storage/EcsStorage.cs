@@ -29,7 +29,7 @@ public class EcsStorage : IEcsStorage
     public event Action<EntityCreatedEventArgs[]> OnEntitiesCreated;
 
     public IEcsRepo EcsRepo { get; set; }
-
+    public ITypeFamilyProvider TypeFamilyProvider { get; init; } = new AllInterfacesFamilyProvider();
     #region Create
 
     public IEntity Create()                                         => Create(Array.Empty<object>(), Array.Empty<string>());
